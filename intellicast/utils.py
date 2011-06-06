@@ -84,8 +84,26 @@ class IntellicastFeed:
                 value = node.getAttribute(attr)
                 mini_dict[attr] = value
             daily_forecast_dict[mini_dict['DayNum']] = mini_dict
+        
+        alert_elements = xml.getElementsByTagName('Alert')
+        alerts_dict = {}
+        
+        if alert_elements:
+            for i, node in enumerate(xml.getElementsByTagName('Alert'), 1):
+                mini_dict = {}
+                attrs = node.attributes.keys()
+                for attr in attrs:
+                    value = node.getAttribute(attr)
+                    mini_dict[attr] = value
+                alerts_dict[i] = mini_dict
+            
+        return conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict
 
-        return conditions_dict, hourly_forecast_dict, daily_forecast_dict
+class CurrentConditions:
+    def __init__(self, current_temp, icon_code, zipcode):
+        self.current_temp = current_temp
+        self.icon_code = icon_code
+        self.zipcode = zipcode
 
 class DailyForecast:
     def __init__(self, weekday, high_temp, low_temp, phrase, icon_code):

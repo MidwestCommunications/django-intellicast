@@ -158,4 +158,4 @@ INSTALLED_APPS = (
 # See http://docs.djangoproject.com/en/dev/topics/logging for
 # more details on how to customize your logging configuration.
 
-DEFAULT_ZIP_CODE = '54403'
+DEFAULT_ZIP_CODE = '70122'

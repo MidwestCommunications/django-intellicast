@@ -1,5 +1,6 @@
 # Create your views here.
 import datetime
+from string import capwords
 
 from django.conf import settings
 
@@ -30,7 +31,14 @@ def weather_page(request):
         try:
             location = WeatherLocation.objects.get(zipcode=zipcode)
         except:
-            i_location = IntellicastLocation(zipcode)
+            try:
+                i_location = IntellicastLocation(zipcode)
+            except:
+                return render_to_response('intellicast/weather.html', {
+                    'unavailable': True,
+                }, context_instance = RequestContext(request))
+                
+                
             location = WeatherLocation.objects.create(
                 intellicast_id=i_location.location_id,
                 city=i_location.city,
@@ -44,11 +52,11 @@ def weather_page(request):
     cname = 'intellicast_feed_data_' + zipcode
     cached_data = cache.get(cname)
     if cached_data:
-        (conditions, hourly_forecasts, daily_forecasts) = cached_data
+        (conditions, hourly_forecasts, daily_forecasts, alerts) = cached_data
     else:
         feed = IntellicastFeed(location.intellicast_id)
-        conditions, hourly_forecasts, daily_forecasts = feed.get_data()
-        cache.set(cname, (conditions, hourly_forecasts, daily_forecasts), 1200)
+        conditions, hourly_forecasts, daily_forecasts, alerts = feed.get_data()
+        cache.set(cname, (conditions, hourly_forecasts, daily_forecasts, alerts), 1200)
     
     #print conditions, hourly_forecasts, daily_forecasts
     
@@ -65,7 +73,7 @@ def weather_page(request):
     
     
     hourly_forecast_items = []
-    for i in range(1, 48):
+    for i in range(1, 24):
         forecast_dict = hourly_forecasts[str(i)]
         forecast_obj = HourlyForecast(
             time_string=forecast_dict['ValidDateLocal'],
@@ -90,6 +98,18 @@ def weather_page(request):
         
         daily_forecast_items.append(forecast_obj)
     
+    alert_items = []
+    for i, item in enumerate(alerts, 1):
+        alerts_dict = alerts[i]
+        
+        bulletin = alerts_dict['Bulletin']
+        bulletin_split = bulletin.split('/', 2)
+        
+        alerts_obj = (alerts_dict['Headline'], capwords(bulletin_split[2]), alerts_dict['StartTime'], alerts_dict['EndTime'])
+        
+        alert_items.append(alerts_obj)
+    
+    
     template_name = "intellicast/weather.html"
     
     return render_to_response(template_name, {
@@ -107,6 +127,8 @@ def weather_page(request):
         'sky': sky,
         'icon_code': icon_code,
         'daily_forecasts': daily_forecast_items,
-        'hourly_forecasts': hourly_forecast_items
+        'hourly_forecasts': hourly_forecast_items,
+        'alerts': alert_items,
+        'unavailable': False
     }, context_instance = RequestContext(request))
     

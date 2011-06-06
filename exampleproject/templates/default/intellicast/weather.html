@@ -3,7 +3,20 @@
 
 <body>
 
+{% if unavailable %}
+<h1>Weather informaiton unavailable.</h1>
+{% else %}
+
 <h1>Weather for {{city}}, {{state}} {{zipcode}}</h1>
+
+{% if alerts %}
+{% for alert in alerts %}
+
+{{alert.0}} - {{alert.2}} until {{alert.3}}<br>
+{{alert.1}}
+
+{% endfor %}
+{% endif %}
 
 <h2>Current Conditions</h2>
 
@@ -37,6 +50,28 @@
 </li>
 {% endfor %}
 </ul>
+
+{% endif %}
+
+<h1>Site Badge Example</h1>
+{% load intellicast_extras %}
+{% get_weather_conditions as weather_conditions %}
+
+<ul>
+<li>Temperature: {{weather_conditions.current_temp}}</li>
+<li>Icon: <img src="{{MEDIA_URL}}intellicast_icons/wx_{{weather_conditions.icon_code}}.png"></li>
+<li>Zipcode: {{weather_conditions.zipcode}}</li>
+</ul>
+
+<h1>Alert Badge Example</h1>
+{% get_weather_alerts as weather_alerts %}
+{% if weather_alerts %}
+    {% for w_alert in weather_alerts %}
+        {{w_alert}}
+    {% endfor %}
+{% else %}
+<p>No Severe Weather Alerts.</p>
+{% endif %}
 
 </body>
 </html>
