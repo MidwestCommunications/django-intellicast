@@ -1,0 +1,42 @@
+<html>
+<head></head>
+
+<body>
+
+<h1>Weather for {{city}}, {{state}} {{zipcode}}</h1>
+
+<h2>Current Conditions</h2>
+
+<img src="{{MEDIA_URL}}intellicast_icons/wx_{{icon_code}}.png">
+
+<ul>
+    <li>Temperature - {{current_temp}}</li>
+    <li>Dewpoint - {{dewpoint}} F</li>
+    <li>Humidity - {{humidity}}</li>
+    <li>Wind - {{wind_direction}} {{wind_speed}} mph</li>
+    <li>Visibility - {{visibility}} miles</li>
+    <li>Sky - {{sky}}</li>
+</ul>
+
+<h2>Hourly Forecast</h2>
+<ul>
+{% for forecast in hourly_forecasts %}
+<li>
+<img src="{{MEDIA_URL}}intellicast_icons/wx_{{forecast.icon_code}}.png">
+    {{forecast.time_string}} - {{forecast.temp}} F, {{forecast.sky}}, Chance of Precipitation {{forecast.precip_chance}}
+</li>
+{% endfor %}
+</ul>
+
+<h2>Extended Forecast</h2>
+<ul>
+{% for forecast in daily_forecasts %}
+<li>
+<img src="{{MEDIA_URL}}intellicast_icons/wx_{{forecast.icon_code}}.png">
+{{forecast.weekday}} - High of {{forecast.high_temp}}, Low of {{forecast.low_temp}}.  {{forecast.phrase}}
+</li>
+{% endfor %}
+</ul>
+
+</body>
+</html>
