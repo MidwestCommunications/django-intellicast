@@ -149,10 +149,10 @@ class GetAlerts(template.Node):
         for i, item in enumerate(alerts, 1):
             alerts_dict = alerts[i]
             
-            bulletin = alerts_dict['Bulletin']
-            bulletin_split = bulletin.split('/', 2)
+            #bulletin = alerts_dict['Bulletin']
+            #bulletin_split = bulletin.split('/', 2)
             
-            alerts_obj = (alerts_dict['Headline'], capwords(bulletin_split[2]), alerts_dict['StartTime'], alerts_dict['EndTime'], alerts_dict['Urgency'])
+            alerts_obj = (alerts_dict['Headline'], alerts_dict['Bulletin'], alerts_dict['StartTime'], alerts_dict['EndTime'], alerts_dict['Urgency'])
             
             alert_items.append(alerts_obj)
         

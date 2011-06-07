@@ -103,9 +103,9 @@ def weather_page(request):
         alerts_dict = alerts[i]
         
         bulletin = alerts_dict['Bulletin']
-        bulletin_split = bulletin.split('/', 2)
+        #bulletin_split = bulletin.split('/', 2)
         
-        alerts_obj = (alerts_dict['Headline'], capwords(bulletin_split[2]), alerts_dict['StartTime'], alerts_dict['EndTime'])
+        alerts_obj = (alerts_dict['Headline'], alerts_dict['Bulletin'], alerts_dict['StartTime'], alerts_dict['EndTime'])
         
         alert_items.append(alerts_obj)
     
