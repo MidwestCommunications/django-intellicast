@@ -98,6 +98,39 @@ def weather_page(request):
         
         daily_forecast_items.append(forecast_obj)
     
+    todays_forecast = daily_forecasts['1']
+    todays_forecast_dict = {
+        'high_temp': todays_forecast['HiTempF'],
+        'precip_chance': todays_forecast['PrecipChanceDay'],
+        'wind_speed': todays_forecast['WndSpdMph'],
+        'wind_direction': todays_forecast['WndDirCardinal'],
+        'sky': todays_forecast['SkyTextDay'],
+        'icon_code': todays_forecast['IconCodeDay']
+    }
+    
+    tonights_forecast_dict = {
+        'low_temp': todays_forecast['LoTempF'],
+        'precip_chance': todays_forecast['PrecipChanceNight'],
+        'wind_speed': todays_forecast['WndSpdMphNight'],
+        'wind_direction': todays_forecast['WndDirCardinalNight'],
+        'sky': todays_forecast['SkyTextNight'],
+        'icon_code': todays_forecast['IconCodeNight']
+    }
+    
+    tomorrows_forecast = daily_forecasts['2']
+    tomorrows_forecast_dict = {
+        'high_temp': todays_forecast['HiTempF'],
+        'precip_chance': todays_forecast['PrecipChance'],
+        'wind_speed': todays_forecast['WndSpdMph'],
+        'wind_direction': todays_forecast['WndDirCardinal'],
+        'sky': todays_forecast['SkyText'],
+        'icon_code': todays_forecast['IconCode']
+    }
+    
+    print "today:", todays_forecast_dict
+    print "tonight:", tonights_forecast_dict
+    print "tomorrow:", tomorrows_forecast_dict
+    
     alert_items = []
     for i, item in enumerate(alerts, 1):
         alerts_dict = alerts[i]
@@ -115,9 +148,17 @@ def weather_page(request):
     return render_to_response(template_name, {
         'city': location.city,
         'state': location.state,
+        'lat': location.latitude,
+        'lon': location.longitude,
         
         'zipcode': zipcode,
         'location': location,
+        
+        'current_conditions': conditions,
+        'todays_forecast': todays_forecast_dict,
+        'tonights_forecast': tonights_forecast_dict,
+        'tomorrows_forecast': tomorrows_forecast_dict,
+        
         'current_temp': current_temp,
         'dewpoint': dewpoint,
         'humidity': humidity,
@@ -130,5 +171,5 @@ def weather_page(request):
         'hourly_forecasts': hourly_forecast_items,
         'alerts': alert_items,
         'unavailable': False
-    }, context_instance = RequestContext(request))
+    }, context_instance = RequestContext(request))    
     
