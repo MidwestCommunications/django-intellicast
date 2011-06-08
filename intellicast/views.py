@@ -23,54 +23,8 @@ def weather_page(request):
         except AttributeError:
             zipcode = None
     
-    cname_location = 'intellicast_location_' + zipcode
-    cached_data_location = cache.get(cname_location)
-    if cached_data_location:
-        location = cached_data_location
-    else:
-        try:
-            location = WeatherLocation.objects.get(zipcode=zipcode)
-        except:
-            try:
-                i_location = IntellicastLocation(zipcode)
-            except:
-                return render_to_response('intellicast/weather.html', {
-                    'unavailable': True,
-                }, context_instance = RequestContext(request))
-                
-                
-            location = WeatherLocation.objects.create(
-                intellicast_id=i_location.location_id,
-                city=i_location.city,
-                state=i_location.state,
-                zipcode=zipcode,
-                latitude=i_location.lat,
-                longitude=i_location.lon
-            )
-        cache.set(cname_location, location, 60 * 60 * 24)
-    
-    cname = 'intellicast_feed_data_' + zipcode
-    cached_data = cache.get(cname)
-    if cached_data:
-        (conditions, hourly_forecasts, daily_forecasts, alerts) = cached_data
-    else:
-        feed = IntellicastFeed(location.intellicast_id)
-        conditions, hourly_forecasts, daily_forecasts, alerts = feed.get_data()
-        cache.set(cname, (conditions, hourly_forecasts, daily_forecasts, alerts), 1200)
-    
-    #print conditions, hourly_forecasts, daily_forecasts
-    
-    current_temp = conditions['TempF']
-    dewpoint = conditions['DewPtF']
-    humidity = conditions['RelHumidity']
-    wind_speed = conditions['WndSpdMph']
-    wind_direction = conditions['WndDirCardinal']
-    visibility = conditions['Visibility']
-    
-    sky = conditions['Sky']
-    icon_code = conditions['IconCode']
-    
-    
+    location = get_intellicast_location(zipcode)
+    (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
     
     hourly_forecast_items = []
     for i in range(1, 24):
@@ -146,30 +100,121 @@ def weather_page(request):
     template_name = "intellicast/weather.html"
     
     return render_to_response(template_name, {
-        'city': location.city,
-        'state': location.state,
-        'lat': location.latitude,
-        'lon': location.longitude,
-        
-        'zipcode': zipcode,
         'location': location,
         
         'current_conditions': conditions,
         'todays_forecast': todays_forecast_dict,
         'tonights_forecast': tonights_forecast_dict,
         'tomorrows_forecast': tomorrows_forecast_dict,
-        
-        'current_temp': current_temp,
-        'dewpoint': dewpoint,
-        'humidity': humidity,
-        'wind_speed': wind_speed,
-        'wind_direction': wind_direction,
-        'visibility': visibility,
-        'sky': sky,
-        'icon_code': icon_code,
+
         'daily_forecasts': daily_forecast_items,
         'hourly_forecasts': hourly_forecast_items,
         'alerts': alert_items,
         'unavailable': False
     }, context_instance = RequestContext(request))    
+
+def daily_weather_detail(request):
+    
+    day='4'
+    
+    forecast_date = datetime.datetime.now() + datetime.timedelta(days=int(day))
+    
+    if request.GET.get('zipcode', 'none') != 'none':
+        zipcode = str(request.GET.get('zipcode'))
+    else:
+        try:
+            zipcode = settings.DEFAULT_ZIP_CODE
+        except AttributeError:
+            zipcode = None
+    
+    location = get_intellicast_location(zipcode)
+    (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
+    
+    forecast = daily_forecasts[day]
+    day_forecast_dict = {
+        'high_temp': forecast['HiTempF'],
+        'precip_chance': forecast['PrecipChanceDay'],
+        'wind_speed': forecast['WndSpdMph'],
+        'wind_direction': forecast['WndDirCardinal'],
+        'sky': forecast['SkyTextDay'],
+        'icon_code': forecast['IconCodeDay'],
+        'humidity': forecast['RelHumidity'],
+        'sunrise': forecast['Sunrise'],
+        'uv_index': forecast['UvIdx'],
+        'uv_description': forecast['UvDescr']
+    }
+    night_forecast_dict = {
+        'low_temp': forecast['LoTempF'],
+        'precip_chance': forecast['PrecipChanceNight'],
+        'wind_speed': forecast['WndSpdMphNight'],
+        'wind_direction': forecast['WndDirCardinalNight'],
+        'sky': forecast['SkyTextNight'],
+        'icon_code': forecast['IconCodeNight'],
+        'humidity': forecast['RelHumidityNight'],
+        'sunset': forecast['Sunset'],
+        'moon_phase': forecast['MoonPhaseText']
+    }
+    
+    template_name = 'intellicast/daily_weather_detail.html'
+    
+    return render_to_response(template_name, {
+        'location': location,
+        'forecast_date': forecast_date,
+        'day_forecast': day_forecast_dict,
+        'night_forecast': night_forecast_dict,
+        'unavailable': False
+    }, context_instance = RequestContext(request))  
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+    
+
+def get_intellicast_location(zipcode):
+    
+    cname_location = 'intellicast_location_' + str(zipcode)
+    cached_data_location = cache.get(cname_location)
+    if cached_data_location:
+        location = cached_data_location
+    else:
+        try:
+            location = WeatherLocation.objects.get(zipcode=zipcode)
+        except:
+            try:
+                i_location = IntellicastLocation(zipcode)
+            except:
+                return render_to_response('intellicast/weather.html', {
+                    'unavailable': True,
+                }, context_instance = RequestContext(request))
+                
+                
+            location = WeatherLocation.objects.create(
+                intellicast_id=i_location.location_id,
+                city=i_location.city,
+                state=i_location.state,
+                zipcode=zipcode,
+                latitude=i_location.lat,
+                longitude=i_location.lon
+            )
+        cache.set(cname_location, location, 60 * 60 * 24)
+    return location
+    
+def get_intellicast_data(location):
+    
+    cname = 'intellicast_feed_data_' + str(location.zipcode)
+    cached_data = cache.get(cname)
+    if cached_data:
+        (conditions, hourly_forecasts, daily_forecasts, alerts) = cached_data
+    else:
+        feed = IntellicastFeed(location.intellicast_id)
+        conditions, hourly_forecasts, daily_forecasts, alerts = feed.get_data()
+        cache.set(cname, (conditions, hourly_forecasts, daily_forecasts, alerts), 1200)
+        
+    return conditions, hourly_forecasts, daily_forecasts, alerts
     

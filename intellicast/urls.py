@@ -7,6 +7,11 @@ urlpatterns = patterns('intellicast.views',
         'weather_page',
         name='intellicast_weather_page'
     ),
+    
+    url(r'^forecast/$',
+        'daily_weather_detail',
+        name='intellicast_daily_weather_detail'
+    ),
 
     #url(r'^articles/(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/(?P<slug>[-\w]+)/$',
     #    'article_detail',
