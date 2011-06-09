@@ -11,7 +11,6 @@ from django.shortcuts import get_object_or_404, render_to_response, redirect
 
 from intellicast.models import WeatherLocation
 from intellicast.utils import IntellicastLocation, IntellicastFeed
-from intellicast.utils import DailyForecast, HourlyForecast
 from intellicast.utils import get_intellicast_location, get_intellicast_data
 
 def weather_page(request):
@@ -30,28 +29,37 @@ def weather_page(request):
     hourly_forecast_items = []
     for i in range(1, 24):
         forecast_dict = hourly_forecasts[str(i)]
-        forecast_obj = HourlyForecast(
-            time_string=forecast_dict['ValidDateLocal'],
-            temp=forecast_dict['HeatIdxF'],
-            icon_code=forecast_dict['IconCode'],
-            sky=forecast_dict['SkyMedium'],
-            precip_chance=forecast_dict['PrecipChance']
-        )
+        forecast_clean = {
+            'time_string':forecast_dict['ValidDateLocal'],
+            'datetime':parse_intellicast_date(forecast_dict['ValidDateLocal']),
+            'temp':forecast_dict['HeatIdxF'],
+            'icon_code':forecast_dict['IconCode'],
+            'sky':forecast_dict['SkyMedium'],
+            'precip_chance':forecast_dict['PrecipChance'],
+            'humidity':forecast_dict['RelHumidity'],
+            'wind_speed': todays_forecast['WndSpdMph'],
+            'wind_direction': todays_forecast['WndDirCardinal'],
+        }
         
-        hourly_forecast_items.append(forecast_obj)
+        hourly_forecast_items.append(forecast_clean)
     
     daily_forecast_items = []
     for i in range(2, 10):
         forecast_dict = daily_forecasts[str(i)]
-        forecast_obj = DailyForecast(
-            weekday=forecast_dict['DayOfWk'],
-            high_temp=forecast_dict['HiTempF'],
-            low_temp=forecast_dict['LoTempF'],
-            phrase=forecast_dict['ShortPhrase'],
-            icon_code=forecast_dict['IconCode']
-        )
+        forecast_clean = {
+            'weekday':forecast_dict['DayOfWk'],
+            'time_string':forecast_dict['ValidDateLocal'],
+            'datetime':parse_intellicast_date(forecast_dict['ValidDateLocal']),
+            'high_temp':forecast_dict['HiTempF'],
+            'low_temp':forecast_dict['LoTempF'],
+            'phrase':forecast_dict['ShortPhrase'],
+            'icon_code':forecast_dict['IconCode'],
+            'humidity':forecast_dict['RelHumidity'],
+            'wind_speed': todays_forecast['WndSpdMph'],
+            'wind_direction': todays_forecast['WndDirCardinal'],
+        }
         
-        daily_forecast_items.append(forecast_obj)
+        daily_forecast_items.append(forecast_clean)
     
     todays_forecast = daily_forecasts['1']
     if todays_forecast['IconCodeDay'] == '86':
@@ -131,18 +139,11 @@ def weather_page(request):
     
     return render_to_response(template_name, {
         'location': location,
-        
         'current_conditions': conditions,
         
         'forecast_12hr': twelve_hr_forecast,
         'forecast_24hr': twentyfour_hr_forecast,
         'forecast_36hr': thirtysix_hr_forecast,
-        
-        
-        'todays_forecast': todays_forecast_dict,
-        'tonights_forecast': tonights_forecast_dict,
-        'tomorrows_forecast': tomorrows_forecast_dict,
-        'tomorrow_nights_forecast': tomorrow_nights_forecast_dict,
 
         'daily_forecasts': daily_forecast_items,
         'hourly_forecasts': hourly_forecast_items,
@@ -150,19 +151,24 @@ def weather_page(request):
         'unavailable': False
     }, context_instance = RequestContext(request))    
 
-def daily_weather_detail(request):
+def daily_weather_detail(request, year=None, month=None, day=None):
     
-    today = datetime.datetime.now()
-    print 'today:', today 
-    day='4'
-    forecast_date = parse_intellicast_date('6/12/2011 6:54:00 PM')
-    print 'date:', forecast_date
-    print "difference:", forecast_date - today
+    #today = datetime.datetime.now()
+    #print 'today:', today 
+    #day='4'
+    #forecast_date = parse_intellicast_date('6/12/2011 6:54:00 PM')
+    #print 'date:', forecast_date
+    #print "difference:", forecast_date - today
+    
+    #forecast_date = datetime.datetime.now() + datetime.timedelta(days=int(day))
     
     
+    forecast_date = datetime.date(year=int(year), month=int(month), day=int(day))
+    difference = forecast_date - datetime.date.today()
+    print "difference:", difference.days
+    day = str(1 + difference.days)
     
     
-    forecast_date = datetime.datetime.now() + datetime.timedelta(days=int(day))
     
     if request.GET.get('zipcode', 'none') != 'none':
         zipcode = str(request.GET.get('zipcode'))
@@ -186,7 +192,8 @@ def daily_weather_detail(request):
         'humidity': forecast['RelHumidity'],
         'sunrise': forecast['Sunrise'],
         'uv_index': forecast['UvIdx'],
-        'uv_description': forecast['UvDescr']
+        'uv_description': forecast['UvDescr'],
+        'date_string': forecast['ValidDateLocal']
     }
     night_forecast_dict = {
         'low_temp': forecast['LoTempF'],
@@ -200,11 +207,23 @@ def daily_weather_detail(request):
         'moon_phase': forecast['MoonPhaseText']
     }
     
+    if int(day) > 1:
+        prev_date = forecast_date - datetime.timedelta(days=1)
+    else:
+        prev_date = None
+    
+    if int(day) < 7:
+        next_date = forecast_date + datetime.timedelta(days=1)
+    else:
+        next_date = None
+    
     template_name = 'intellicast/daily_weather_detail.html'
     
     return render_to_response(template_name, {
         'location': location,
         'forecast_date': forecast_date,
+        'prev_date': prev_date,
+        'next_date': next_date,
         'day_forecast': day_forecast_dict,
         'night_forecast': night_forecast_dict,
         'unavailable': False
@@ -233,7 +252,14 @@ def parse_intellicast_date(date_as_string):
     
     if am_pm == 'PM':
         hour = hour + 12
-        
+    
+    if hour == 24:
+        hour = 0
+        #am_pm = 'AM'
+    #hour = hour - 1
+    
+    print "hour", hour
+    
     return datetime.datetime(year=year,month=month,day=day,hour=hour,minute=minute)
 
 
