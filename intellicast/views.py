@@ -12,6 +12,7 @@ from django.shortcuts import get_object_or_404, render_to_response, redirect
 from intellicast.models import WeatherLocation
 from intellicast.utils import IntellicastLocation, IntellicastFeed
 from intellicast.utils import DailyForecast, HourlyForecast
+from intellicast.utils import get_intellicast_location, get_intellicast_data
 
 def weather_page(request):
     
@@ -53,14 +54,17 @@ def weather_page(request):
         daily_forecast_items.append(forecast_obj)
     
     todays_forecast = daily_forecasts['1']
-    todays_forecast_dict = {
-        'high_temp': todays_forecast['HiTempF'],
-        'precip_chance': todays_forecast['PrecipChanceDay'],
-        'wind_speed': todays_forecast['WndSpdMph'],
-        'wind_direction': todays_forecast['WndDirCardinal'],
-        'sky': todays_forecast['SkyTextDay'],
-        'icon_code': todays_forecast['IconCodeDay']
-    }
+    if todays_forecast['IconCodeDay'] == '86':
+        todays_forecast_dict = None
+    else:
+        todays_forecast_dict = {
+            'high_temp': todays_forecast['HiTempF'],
+            'precip_chance': todays_forecast['PrecipChanceDay'],
+            'wind_speed': todays_forecast['WndSpdMph'],
+            'wind_direction': todays_forecast['WndDirCardinal'],
+            'sky': todays_forecast['SkyTextDay'],
+            'icon_code': todays_forecast['IconCodeDay']
+        }
     
     tonights_forecast_dict = {
         'low_temp': todays_forecast['LoTempF'],
@@ -73,17 +77,30 @@ def weather_page(request):
     
     tomorrows_forecast = daily_forecasts['2']
     tomorrows_forecast_dict = {
-        'high_temp': todays_forecast['HiTempF'],
-        'precip_chance': todays_forecast['PrecipChance'],
-        'wind_speed': todays_forecast['WndSpdMph'],
-        'wind_direction': todays_forecast['WndDirCardinal'],
-        'sky': todays_forecast['SkyText'],
-        'icon_code': todays_forecast['IconCode']
+        'high_temp': tomorrows_forecast['HiTempF'],
+        'precip_chance': tomorrows_forecast['PrecipChanceDay'],
+        'wind_speed': tomorrows_forecast['WndSpdMph'],
+        'wind_direction': tomorrows_forecast['WndDirCardinal'],
+        'sky': tomorrows_forecast['SkyTextDay'],
+        'icon_code': tomorrows_forecast['IconCodeDay']
     }
     
-    print "today:", todays_forecast_dict
+    if todays_forecast_dict:
+        tomorrow_nights_forecast_dict = None
+    else:
+        tomorrow_nights_forecast_dict = {
+            'high_temp': tomorrows_forecast['HiTempF'],
+            'precip_chance': tomorrows_forecast['PrecipChanceNight'],
+            'wind_speed': tomorrows_forecast['WndSpdMph'],
+            'wind_direction': tomorrows_forecast['WndDirCardinal'],
+            'sky': tomorrows_forecast['SkyTextDay'],
+            'icon_code': tomorrows_forecast['IconCodeDay']
+        }
+    
+    print "today (daytime):", todays_forecast_dict
     print "tonight:", tonights_forecast_dict
-    print "tomorrow:", tomorrows_forecast_dict
+    print "tomorrow: (daytime)", tomorrows_forecast_dict
+    print "tomorrow night:", tomorrow_nights_forecast_dict
     
     alert_items = []
     for i, item in enumerate(alerts, 1):
@@ -106,6 +123,7 @@ def weather_page(request):
         'todays_forecast': todays_forecast_dict,
         'tonights_forecast': tonights_forecast_dict,
         'tomorrows_forecast': tomorrows_forecast_dict,
+        'tomorrow_nights_forecast': tomorrow_nights_forecast_dict,
 
         'daily_forecasts': daily_forecast_items,
         'hourly_forecasts': hourly_forecast_items,
@@ -115,7 +133,15 @@ def weather_page(request):
 
 def daily_weather_detail(request):
     
+    today = datetime.datetime.now()
+    print 'today:', today 
     day='4'
+    forecast_date = parse_intellicast_date('6/12/2011 6:54:00 PM')
+    print 'date:', forecast_date
+    print "difference:", forecast_date - today
+    
+    
+    
     
     forecast_date = datetime.datetime.now() + datetime.timedelta(days=int(day))
     
@@ -171,50 +197,25 @@ def daily_weather_detail(request):
     
     
     
+def parse_intellicast_date(date_as_string):    
+    date_list = date_as_string.split(' ')
+    date = date_list[0]
+    time = date_list[1]
+    am_pm = date_list[2]
     
+    date_split = date.split('/')
+    month=int(date_split[0])
+    day=int(date_split[1])
+    year=int(date_split[2])
     
+    time_split = time.split(':')
+    hour=int(time_split[0])
+    minute=int(time_split[1])
     
-    
-
-def get_intellicast_location(zipcode):
-    
-    cname_location = 'intellicast_location_' + str(zipcode)
-    cached_data_location = cache.get(cname_location)
-    if cached_data_location:
-        location = cached_data_location
-    else:
-        try:
-            location = WeatherLocation.objects.get(zipcode=zipcode)
-        except:
-            try:
-                i_location = IntellicastLocation(zipcode)
-            except:
-                return render_to_response('intellicast/weather.html', {
-                    'unavailable': True,
-                }, context_instance = RequestContext(request))
-                
-                
-            location = WeatherLocation.objects.create(
-                intellicast_id=i_location.location_id,
-                city=i_location.city,
-                state=i_location.state,
-                zipcode=zipcode,
-                latitude=i_location.lat,
-                longitude=i_location.lon
-            )
-        cache.set(cname_location, location, 60 * 60 * 24)
-    return location
-    
-def get_intellicast_data(location):
-    
-    cname = 'intellicast_feed_data_' + str(location.zipcode)
-    cached_data = cache.get(cname)
-    if cached_data:
-        (conditions, hourly_forecasts, daily_forecasts, alerts) = cached_data
-    else:
-        feed = IntellicastFeed(location.intellicast_id)
-        conditions, hourly_forecasts, daily_forecasts, alerts = feed.get_data()
-        cache.set(cname, (conditions, hourly_forecasts, daily_forecasts, alerts), 1200)
+    if am_pm == 'PM':
+        hour = hour + 12
         
-    return conditions, hourly_forecasts, daily_forecasts, alerts
+    return datetime.datetime(year=year,month=month,day=day,hour=hour,minute=minute)
+
+
     

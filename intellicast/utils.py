@@ -1,5 +1,8 @@
 from urllib import urlopen
 from xml.dom.minidom import parse
+from django.core.cache import cache
+
+from intellicast.models import WeatherLocation
 
 class IntellicastLocation:
     
@@ -98,6 +101,49 @@ class IntellicastFeed:
                 alerts_dict[i] = mini_dict
             
         return conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict
+
+def get_intellicast_location(zipcode):
+    
+    cname_location = 'intellicast_location_' + str(zipcode)
+    cached_data_location = cache.get(cname_location)
+    if cached_data_location:
+        location = cached_data_location
+    else:
+        try:
+            location = WeatherLocation.objects.get(zipcode=zipcode)
+        except:
+            try:
+                i_location = IntellicastLocation(zipcode)
+            except:
+                return render_to_response('intellicast/weather.html', {
+                    'unavailable': True,
+                }, context_instance = RequestContext(request))
+                
+                
+            location = WeatherLocation.objects.create(
+                intellicast_id=i_location.location_id,
+                city=i_location.city,
+                state=i_location.state,
+                zipcode=zipcode,
+                latitude=i_location.lat,
+                longitude=i_location.lon
+            )
+        cache.set(cname_location, location, 60 * 60 * 24)
+    return location
+    
+def get_intellicast_data(location):
+    
+    cname = 'intellicast_feed_data_' + str(location.zipcode)
+    cached_data = cache.get(cname)
+    if cached_data:
+        (conditions, hourly_forecasts, daily_forecasts, alerts) = cached_data
+    else:
+        feed = IntellicastFeed(location.intellicast_id)
+        conditions, hourly_forecasts, daily_forecasts, alerts = feed.get_data()
+        cache.set(cname, (conditions, hourly_forecasts, daily_forecasts, alerts), 1200)
+        
+    return conditions, hourly_forecasts, daily_forecasts, alerts
+
 
 class CurrentConditions:
     def __init__(self, current_temp, icon_code, zipcode):

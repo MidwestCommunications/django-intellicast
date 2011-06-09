@@ -11,6 +11,7 @@ from django.shortcuts import get_object_or_404
 
 from intellicast.models import WeatherLocation
 from intellicast.utils import IntellicastLocation, IntellicastFeed, CurrentConditions
+from intellicast.utils import get_intellicast_location, get_intellicast_data
 
 """
 Summary of Template Tags and Syntax:
@@ -32,38 +33,8 @@ class GetConditions(template.Node):
         except AttributeError:
             return ''
         
-        #Fetching Location
-        cname_location = 'intellicast_location_' + zipcode
-        cached_data_location = cache.get(cname_location)
-        if cached_data_location:
-            location = cached_data_location
-        else:
-            try:
-                location = WeatherLocation.objects.get(zipcode=zipcode)
-            except:
-                try:
-                    i_location = IntellicastLocation(zipcode)
-                except:
-                    return ''
-                location = WeatherLocation.objects.create(
-                    intellicast_id=i_location.location_id,
-                    city=i_location.city,
-                    state=i_location.state,
-                    zipcode=zipcode,
-                    latitude=i_location.lat,
-                    longitude=i_location.lon
-                )
-            cache.set(cname_location, location, 60 * 60 * 24)
-        
-        #Fetching Conditions and Forecasts
-        cname = 'intellicast_feed_data_' + zipcode
-        cached_data = cache.get(cname)
-        if cached_data:
-            (conditions, hourly_forecasts, daily_forecasts, alerts) = cached_data
-        else:
-            feed = IntellicastFeed(location.intellicast_id)
-            conditions, hourly_forecasts, daily_forecasts, alerts = feed.get_data()
-            cache.set(cname, (conditions, hourly_forecasts, daily_forecasts, alerts), 1200)
+        location = get_intellicast_location(zipcode)
+        (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
         
         conditions_obj = CurrentConditions(
             zipcode=zipcode,
@@ -87,20 +58,6 @@ def get_weather_conditions(parser, token):
     var_name = args[-1]
     return GetConditions(var_name)
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 class GetAlerts(template.Node):
     def __init__(self, var_name):
         self.var_name = var_name
@@ -112,38 +69,8 @@ class GetAlerts(template.Node):
         except AttributeError:
             return ''
         
-        #Fetching Location
-        cname_location = 'intellicast_location_' + zipcode
-        cached_data_location = cache.get(cname_location)
-        if cached_data_location:
-            location = cached_data_location
-        else:
-            try:
-                location = WeatherLocation.objects.get(zipcode=zipcode)
-            except:
-                try:
-                    i_location = IntellicastLocation(zipcode)
-                except:
-                    return ''
-                location = WeatherLocation.objects.create(
-                    intellicast_id=i_location.location_id,
-                    city=i_location.city,
-                    state=i_location.state,
-                    zipcode=zipcode,
-                    latitude=i_location.lat,
-                    longitude=i_location.lon
-                )
-            cache.set(cname_location, location, 60 * 60 * 24)
-                
-        #Fetching Conditions and Forecasts
-        cname = 'intellicast_feed_data_' + zipcode
-        cached_data = cache.get(cname)
-        if cached_data:
-            (conditions, hourly_forecasts, daily_forecasts, alerts) = cached_data
-        else:
-            feed = IntellicastFeed(location.intellicast_id)
-            conditions, hourly_forecasts, daily_forecasts, alerts = feed.get_data()
-            cache.set(cname, (conditions, hourly_forecasts, daily_forecasts, alerts), 1200)
+        location = get_intellicast_location(zipcode)
+        (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
                 
         alert_items = []
         for i, item in enumerate(alerts, 1):
@@ -155,8 +82,6 @@ class GetAlerts(template.Node):
             alerts_obj = (alerts_dict['Headline'], alerts_dict['Bulletin'], alerts_dict['StartTime'], alerts_dict['EndTime'], alerts_dict['Urgency'])
             
             alert_items.append(alerts_obj)
-        
-        
 
         context[self.var_name] = alert_items #conditions_obj
         return ''
@@ -164,10 +89,10 @@ class GetAlerts(template.Node):
 @register.tag
 def get_weather_alerts(parser, token):
     """
-    Get the weather conditions for the current site's default zipcode.
+    Get the weather alerts, if there are any, for the current site's default zipcode.
     
     Syntax:
-    {% get_current_conditions as [var_name] %}
+    {% get_weather_conditions as [var_name] %}
     """
     
     args = token.split_contents()
