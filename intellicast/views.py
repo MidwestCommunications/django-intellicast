@@ -50,7 +50,7 @@ def weather_page(request):
         hourly_forecast_items.append(forecast_clean)
     
     daily_forecast_items = []
-    for i in range(2, 10):
+    for i in range(2, 9):
         forecast_dict = daily_forecasts[str(i)]
         forecast_clean = {
             'weekday':forecast_dict['DayOfWk'],
