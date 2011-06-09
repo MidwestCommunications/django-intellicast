@@ -74,7 +74,8 @@ def weather_page(request):
     else:
         todays_forecast_dict = {
             'shortname': 'Today',
-            'high_temp': todays_forecast['HiTempF'],
+            'temp': todays_forecast['HiTempF'],
+            'temp-type': todays_forecast['High'],
             'precip_chance': todays_forecast['PrecipChanceDay'],
             'wind_speed': todays_forecast['WndSpdMph'],
             'wind_direction': todays_forecast['WndDirCardinal'],
@@ -84,7 +85,8 @@ def weather_page(request):
     
     tonights_forecast_dict = {
         'shortname': 'Tonight',
-        'low_temp': todays_forecast['LoTempF'],
+        'temp': todays_forecast['LoTempF'],
+        'temp-type': todays_forecast['Low'],
         'precip_chance': todays_forecast['PrecipChanceNight'],
         'wind_speed': todays_forecast['WndSpdMphNight'],
         'wind_direction': todays_forecast['WndDirCardinalNight'],
@@ -95,7 +97,8 @@ def weather_page(request):
     tomorrows_forecast = daily_forecasts['2']
     tomorrows_forecast_dict = {
         'shortname': 'Tomorrow',
-        'high_temp': tomorrows_forecast['HiTempF'],
+        'temp': tomorrows_forecast['HiTempF'],
+        'temp-type': tomorrows_forecast['High'],
         'precip_chance': tomorrows_forecast['PrecipChanceDay'],
         'wind_speed': tomorrows_forecast['WndSpdMph'],
         'wind_direction': tomorrows_forecast['WndDirCardinal'],
@@ -108,7 +111,8 @@ def weather_page(request):
     else:
         tomorrow_nights_forecast_dict = {
             'shortname': 'Tomorrow Night',
-            'high_temp': tomorrows_forecast['HiTempF'],
+            'temp': tomorrows_forecast['LoTempF'],
+            'temp-type': tomorrows_forecast['Low'],
             'precip_chance': tomorrows_forecast['PrecipChanceNight'],
             'wind_speed': tomorrows_forecast['WndSpdMph'],
             'wind_direction': tomorrows_forecast['WndDirCardinal'],
