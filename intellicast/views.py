@@ -145,12 +145,18 @@ def weather_page(request):
         
         alert_items.append(alerts_obj)
     
+    todays_date = datetime.datetime.now()
+    tomorrows_date = datetime.datetime.now() + datetime.timedelta(days=1)
     
     template_name = "intellicast/weather.html"
     
     return render_to_response(template_name, {
         'location': location,
         'current_conditions': conditions,
+        
+        'todays_date': todays_date,
+        'tomorrows_date': tomorrows_date,
+        
         
         'forecast_12hr': twelve_hr_forecast,
         'forecast_24hr': twentyfour_hr_forecast,
