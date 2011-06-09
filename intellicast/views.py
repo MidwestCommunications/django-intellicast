@@ -58,6 +58,7 @@ def weather_page(request):
         todays_forecast_dict = None
     else:
         todays_forecast_dict = {
+            'shortname': 'Today',
             'high_temp': todays_forecast['HiTempF'],
             'precip_chance': todays_forecast['PrecipChanceDay'],
             'wind_speed': todays_forecast['WndSpdMph'],
@@ -67,6 +68,7 @@ def weather_page(request):
         }
     
     tonights_forecast_dict = {
+        'shortname': 'Tonight',
         'low_temp': todays_forecast['LoTempF'],
         'precip_chance': todays_forecast['PrecipChanceNight'],
         'wind_speed': todays_forecast['WndSpdMphNight'],
@@ -77,6 +79,7 @@ def weather_page(request):
     
     tomorrows_forecast = daily_forecasts['2']
     tomorrows_forecast_dict = {
+        'shortname': 'Tomorrow',
         'high_temp': tomorrows_forecast['HiTempF'],
         'precip_chance': tomorrows_forecast['PrecipChanceDay'],
         'wind_speed': tomorrows_forecast['WndSpdMph'],
@@ -89,6 +92,7 @@ def weather_page(request):
         tomorrow_nights_forecast_dict = None
     else:
         tomorrow_nights_forecast_dict = {
+            'shortname': 'Tomorrow Night',
             'high_temp': tomorrows_forecast['HiTempF'],
             'precip_chance': tomorrows_forecast['PrecipChanceNight'],
             'wind_speed': tomorrows_forecast['WndSpdMph'],
@@ -101,6 +105,15 @@ def weather_page(request):
     print "tonight:", tonights_forecast_dict
     print "tomorrow: (daytime)", tomorrows_forecast_dict
     print "tomorrow night:", tomorrow_nights_forecast_dict
+    
+    if todays_forecast_dict:
+        twelve_hr_forecast = todays_forecast_dict
+        twentyfour_hr_forecast = tonights_forecast_dict
+        thirtysix_hr_forecast = tomorrows_forecast_dict
+    else:
+        twelve_hr_forecast = tonights_forecast_dict
+        twentyfour_hr_forecast = tomorrows_forecast_dict
+        thirtysix_hr_forecast = tomorrow_nights_forecast_dict
     
     alert_items = []
     for i, item in enumerate(alerts, 1):
@@ -120,6 +133,12 @@ def weather_page(request):
         'location': location,
         
         'current_conditions': conditions,
+        
+        'forecast_12hr': twelve_hr_forecast,
+        'forecast_24hr': twentyfour_hr_forecast,
+        'forecast_36hr': thirtysix_hr_forecast,
+        
+        
         'todays_forecast': todays_forecast_dict,
         'tonights_forecast': tonights_forecast_dict,
         'tomorrows_forecast': tomorrows_forecast_dict,
