@@ -37,8 +37,8 @@ def weather_page(request):
             'sky':forecast_dict['SkyMedium'],
             'precip_chance':forecast_dict['PrecipChance'],
             'humidity':forecast_dict['RelHumidity'],
-            'wind_speed': todays_forecast['WndSpdMph'],
-            'wind_direction': todays_forecast['WndDirCardinal'],
+            'wind_speed': forecast_dict['WndSpdMph'],
+            'wind_direction': forecast_dict['WndDirCardinal'],
         }
         
         hourly_forecast_items.append(forecast_clean)
@@ -55,8 +55,8 @@ def weather_page(request):
             'phrase':forecast_dict['ShortPhrase'],
             'icon_code':forecast_dict['IconCode'],
             'humidity':forecast_dict['RelHumidity'],
-            'wind_speed': todays_forecast['WndSpdMph'],
-            'wind_direction': todays_forecast['WndDirCardinal'],
+            'wind_speed': forecast_dict['WndSpdMph'],
+            'wind_direction': forecast_dict['WndDirCardinal'],
         }
         
         daily_forecast_items.append(forecast_clean)
