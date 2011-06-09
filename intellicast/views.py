@@ -29,6 +29,11 @@ def weather_page(request):
     hourly_forecast_items = []
     for i in range(1, 24):
         forecast_dict = hourly_forecasts[str(i)]
+        if parse_intellicast_date(forecast_dict['ValidDateLocal']).hour == 23:
+            last_of_day = True
+            print "got one"
+        else:
+            last_of_day = False
         forecast_clean = {
             'time_string':forecast_dict['ValidDateLocal'],
             'datetime':parse_intellicast_date(forecast_dict['ValidDateLocal']),
@@ -39,6 +44,7 @@ def weather_page(request):
             'humidity':forecast_dict['RelHumidity'],
             'wind_speed': forecast_dict['WndSpdMph'],
             'wind_direction': forecast_dict['WndDirCardinal'],
+            'lastofday': last_of_day
         }
         
         hourly_forecast_items.append(forecast_clean)
