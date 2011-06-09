@@ -54,6 +54,7 @@ def weather_page(request):
             'low_temp':forecast_dict['LoTempF'],
             'phrase':forecast_dict['ShortPhrase'],
             'icon_code':forecast_dict['IconCode'],
+            'precip_chance':forecast_dict['PrecipChance'],
             'humidity':forecast_dict['RelHumidity'],
             'wind_speed': forecast_dict['WndSpdMph'],
             'wind_direction': forecast_dict['WndDirCardinal'],
