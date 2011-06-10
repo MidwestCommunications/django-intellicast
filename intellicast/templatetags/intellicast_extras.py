@@ -1,5 +1,6 @@
 import re
 import datetime
+import string
 from string import capwords
 
 from django import template
@@ -33,16 +34,19 @@ class GetConditions(template.Node):
         except AttributeError:
             return ''
         
-        location = get_intellicast_location(zipcode)
-        (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
+        try:
+            location = get_intellicast_location(zipcode)
+            (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
+        except:
+            return ''
         
-        conditions_obj = CurrentConditions(
-            zipcode=zipcode,
-            current_temp=conditions['TempF'],
-            icon_code=conditions['IconCode']
-        )
+        conditions_badge = {
+            'zipcode': zipcode, 
+            'current_temp': conditions['TempF'], 
+            'icon_code' : conditions['IconCode']
+        }
 
-        context[self.var_name] = conditions_obj
+        context[self.var_name] = conditions_badge
         return ''
         
 @register.tag
@@ -69,21 +73,31 @@ class GetAlerts(template.Node):
         except AttributeError:
             return ''
         
-        location = get_intellicast_location(zipcode)
-        (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
+        try:
+            location = get_intellicast_location(zipcode)
+            (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
+        except:
+            return ''
+        
+        try:
+            alert_items = []
+            for i, item in enumerate(alerts, 1):
+                alerts_dict = alerts[i]
+                bulletin = string.capwords(alerts_dict['Bulletin'])
                 
-        alert_items = []
-        for i, item in enumerate(alerts, 1):
-            alerts_dict = alerts[i]
-            
-            #bulletin = alerts_dict['Bulletin']
-            #bulletin_split = bulletin.split('/', 2)
-            
-            alerts_obj = (alerts_dict['Headline'], alerts_dict['Bulletin'], alerts_dict['StartTime'], alerts_dict['EndTime'], alerts_dict['Urgency'])
-            
-            alert_items.append(alerts_obj)
+                alert_item = {
+                    'headline': alerts_dict['Headline'],
+                    'starttime': alerts_dict['StartTime'],
+                    'endtime': alerts_dict['EndTime'],
+                    'urgency': alerts_dict['Urgency'],
+                    'bulletin': bulletin,
+                }
+                alert_items.append(alert_item)
 
-        context[self.var_name] = alert_items #conditions_obj
+            context[self.var_name] = alert_items
+        except:
+            pass
+        
         return ''
         
 @register.tag
@@ -98,5 +112,3 @@ def get_weather_alerts(parser, token):
     args = token.split_contents()
     var_name = args[-1]
     return GetAlerts(var_name)
-
-

@@ -9,26 +9,17 @@
 
 <h1>Weather for {{city}}, {{state}} {{zipcode}}</h1>
 
-{% if alerts %}
-{% for alert in alerts %}
-
-{{alert.0}} - {{alert.2}} until {{alert.3}}<br>
-{{alert.1}}
-
-{% endfor %}
-{% endif %}
-
 <h2>Current Conditions</h2>
 
-<img src="{{MEDIA_URL}}intellicast_icons/wx_{{icon_code}}.png">
+<img src="{{MEDIA_URL}}intellicast_icons/wx_{{current_conditions.IconCode}}.png">
 
 <ul>
-    <li>Temperature - {{current_temp}}</li>
-    <li>Dewpoint - {{dewpoint}} F</li>
-    <li>Humidity - {{humidity}}</li>
-    <li>Wind - {{wind_direction}} {{wind_speed}} mph</li>
-    <li>Visibility - {{visibility}} miles</li>
-    <li>Sky - {{sky}}</li>
+    <li>Temperature - {{ current_conditions.TempF }} F</li>
+    <li>Dewpoint - {{ current_conditions.DewPtF }} F</li>
+    <li>Humidity - {{ current_conditions.RelHumidity }}</li>
+    <li>Wind - {{ current_conditions.WndDirCardinal }} {{ current_conditions.WndSpdMph }} mph with gusts up to {{ current_conditions.WndGustMph }}</li>
+    <li>Visibility - {{ current_conditions.Visibility }} miles</li>
+    <li>Sky - {{ current_conditions.Sky }}</li>
 </ul>
 
 <h2>Hourly Forecast</h2>
@@ -67,7 +58,8 @@
 {% get_weather_alerts as weather_alerts %}
 {% if weather_alerts %}
     {% for w_alert in weather_alerts %}
-        {{w_alert}}
+        {{w_alert.headline}} {{w_alert.starttime}} until {{w_alert.endtime}}<br>
+        {{w_alert.bulletin}}
     {% endfor %}
 {% else %}
 <p>No Severe Weather Alerts.</p>

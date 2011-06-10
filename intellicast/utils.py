@@ -1,5 +1,7 @@
+import datetime
 from urllib import urlopen
 from xml.dom.minidom import parse
+
 from django.core.cache import cache
 
 from intellicast.models import WeatherLocation
@@ -143,6 +145,33 @@ def get_intellicast_data(location):
         cache.set(cname, (conditions, hourly_forecasts, daily_forecasts, alerts), 1200)
         
     return conditions, hourly_forecasts, daily_forecasts, alerts
+
+def parse_intellicast_date(date_as_string):    
+    date_list = date_as_string.split(' ')
+    date = date_list[0]
+    time = date_list[1]
+    am_pm = date_list[2]
+    
+    date_split = date.split('/')
+    month=int(date_split[0])
+    day=int(date_split[1])
+    year=int(date_split[2])
+    
+    time_split = time.split(':')
+    hour=int(time_split[0])
+    minute=int(time_split[1])
+    
+    if am_pm == 'PM':
+        hour = hour + 12
+    
+    if hour == 24:
+        hour = 0
+        #am_pm = 'AM'
+    #hour = hour - 1
+    
+    print "hour", hour
+    
+    return datetime.datetime(year=year,month=month,day=day,hour=hour,minute=minute)
 
 
 class CurrentConditions:
