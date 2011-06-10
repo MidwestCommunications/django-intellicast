@@ -82,15 +82,13 @@ class GetAlerts(template.Node):
         try:
             alert_items = []
             for i, item in enumerate(alerts, 1):
-                alerts_dict = alerts[i]
-                bulletin = string.capwords(alerts_dict['Bulletin'])
-                
+                alerts_dict = alerts[i]                
                 alert_item = {
                     'headline': alerts_dict['Headline'],
                     'starttime': alerts_dict['StartTime'],
                     'endtime': alerts_dict['EndTime'],
                     'urgency': alerts_dict['Urgency'],
-                    'bulletin': bulletin,
+                    'bulletin': alerts_dict['Bulletin'],
                 }
                 alert_items.append(alert_item)
 
