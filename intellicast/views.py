@@ -132,7 +132,7 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         'uv_index': forecast['UvIdx'],
         'uv_description': forecast['UvDescr'],
         'date_string': forecast['ValidDateLocal'],
-        'datetime': parse_intellicast_date(forecast['ValidDateLocal']
+        'datetime': parse_intellicast_date(forecast['ValidDateLocal'])
     }
     night_forecast_dict = {
         'low_temp': forecast['LoTempF'],
@@ -144,7 +144,7 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         'humidity': forecast['RelHumidityNight'],
         'sunset': forecast['Sunset'],
         'moon_phase': forecast['MoonPhaseText'],
-        'datetime': parse_intellicast_date(forecast['ValidDateLocal']
+        'datetime': parse_intellicast_date(forecast['ValidDateLocal'])
     }
     
     template_name = 'intellicast/daily_weather_detail.html'
