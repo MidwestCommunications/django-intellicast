@@ -11,13 +11,13 @@ from django.db.models import F, Q
 from django.shortcuts import get_object_or_404
 
 from intellicast.models import WeatherLocation
-from intellicast.utils import IntellicastLocation, IntellicastFeed, CurrentConditions
 from intellicast.utils import get_intellicast_location, get_intellicast_data
 
 """
 Summary of Template Tags and Syntax:
 
 get_weather_conditions as [var_name]
+get_weather_alerts as [var_name]
 
 """
 
@@ -37,16 +37,16 @@ class GetConditions(template.Node):
         try:
             location = get_intellicast_location(zipcode)
             (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
+            
+            conditions_badge = {
+                'zipcode': zipcode, 
+                'current_temp': conditions['TempF'], 
+                'icon_code' : conditions['IconCode']
+            }
+            context[self.var_name] = conditions_badge
         except:
-            return ''
+            pass        
         
-        conditions_badge = {
-            'zipcode': zipcode, 
-            'current_temp': conditions['TempF'], 
-            'icon_code' : conditions['IconCode']
-        }
-
-        context[self.var_name] = conditions_badge
         return ''
         
 @register.tag

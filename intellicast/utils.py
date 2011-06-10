@@ -166,32 +166,5 @@ def parse_intellicast_date(date_as_string):
     
     if hour == 24:
         hour = 0
-        #am_pm = 'AM'
-    #hour = hour - 1
-    
-    print "hour", hour
-    
+            
     return datetime.datetime(year=year,month=month,day=day,hour=hour,minute=minute)
-
-
-class CurrentConditions:
-    def __init__(self, current_temp, icon_code, zipcode):
-        self.current_temp = current_temp
-        self.icon_code = icon_code
-        self.zipcode = zipcode
-
-class DailyForecast:
-    def __init__(self, weekday, high_temp, low_temp, phrase, icon_code):
-        self.weekday = weekday
-        self.high_temp = high_temp
-        self.low_temp = low_temp
-        self.phrase = phrase
-        self.icon_code = icon_code
-        
-class HourlyForecast:
-    def __init__(self, time_string, temp, icon_code, sky, precip_chance):
-        self.time_string = time_string
-        self.temp = temp
-        self.icon_code = icon_code
-        self.sky = sky
-        self.precip_chance = precip_chance

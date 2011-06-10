@@ -10,19 +10,15 @@ from django.template import RequestContext
 from django.shortcuts import get_object_or_404, render_to_response, redirect
 
 from intellicast.models import WeatherLocation
-from intellicast.utils import IntellicastLocation, IntellicastFeed
 from intellicast.utils import get_intellicast_location, get_intellicast_data
 from intellicast.utils import parse_intellicast_date
 
 def weather_page(request):
     
-    if request.GET.get('zipcode', 'none') != 'none':
-        zipcode = str(request.GET.get('zipcode'))
-    else:
-        try:
-            zipcode = settings.DEFAULT_ZIP_CODE
-        except AttributeError:
-            zipcode = None
+    try:        
+        zipcode = request.GET.get('zipcode', settings.DEFAULT_ZIP_CODE)
+    except AttributeError:
+        zipcode = None
     
     location = get_intellicast_location(zipcode)
     (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
@@ -32,7 +28,6 @@ def weather_page(request):
         forecast_dict = hourly_forecasts[str(i)]
         if parse_intellicast_date(forecast_dict['ValidDateLocal']).hour == 23:
             last_of_day = True
-            print "got one"
         else:
             last_of_day = False
         forecast_clean = {
@@ -98,13 +93,10 @@ def daily_weather_detail(request, year=None, month=None, day=None):
     difference = forecast_date - datetime.date.today()
     day_index = str(1 + difference.days)
     
-    if request.GET.get('zipcode', 'none') != 'none':
-        zipcode = str(request.GET.get('zipcode'))
-    else:
-        try:
-            zipcode = settings.DEFAULT_ZIP_CODE
-        except AttributeError:
-            zipcode = None
+    try:        
+        zipcode = request.GET.get('zipcode', settings.DEFAULT_ZIP_CODE)
+    except AttributeError:
+        zipcode = None
     
     location = get_intellicast_location(zipcode)
     (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
