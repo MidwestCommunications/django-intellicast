@@ -10,7 +10,6 @@ from django.core.cache import cache
 from django.db.models import F, Q
 from django.shortcuts import get_object_or_404
 
-from intellicast.models import WeatherLocation
 from intellicast.utils import get_intellicast_location, get_intellicast_data
 
 """

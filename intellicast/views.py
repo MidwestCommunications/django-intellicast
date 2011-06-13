@@ -9,7 +9,6 @@ from django.core.cache import cache
 from django.template import RequestContext
 from django.shortcuts import get_object_or_404, render_to_response, redirect
 
-from intellicast.models import WeatherLocation
 from intellicast.utils import get_intellicast_location, get_intellicast_data
 from intellicast.utils import parse_intellicast_date
 

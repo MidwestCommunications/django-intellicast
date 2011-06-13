@@ -4,8 +4,6 @@ from xml.dom.minidom import parse
 
 from django.core.cache import cache
 
-from intellicast.models import WeatherLocation
-
 class IntellicastLocation:
     
     def __init__(self, zipcode):
@@ -104,7 +102,7 @@ class IntellicastFeed:
             
         return conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict
 
-def get_intellicast_location(zipcode):
+def get_intellicast_location_old(zipcode):
     
     cname_location = 'intellicast_location_' + str(zipcode)
     cached_data_location = cache.get(cname_location)
@@ -132,15 +130,39 @@ def get_intellicast_location(zipcode):
             )
         cache.set(cname_location, location, 60 * 60 * 24)
     return location
+
+
+
+
+def get_intellicast_location(zipcode):
     
+    cname_location = 'intellicast_location_' + str(zipcode)
+    cached_data_location = cache.get(cname_location)
+    if cached_data_location:
+        location = cached_data_location
+    else:
+        i_location = IntellicastLocation(zipcode)
+        location = {
+            'intellicast_id': i_location.location_id,
+            'city': i_location.city,
+            'state': i_location.state,
+            'zipcode': zipcode,
+            'latitude': i_location.lat,
+            'longitude': i_location.lon
+        }
+        cache.set(cname_location, location, 60 * 60 * 24)
+    return location
+        
+
+
 def get_intellicast_data(location):
     
-    cname = 'intellicast_feed_data_' + str(location.zipcode)
+    cname = 'intellicast_feed_data_' + str(location['zipcode'])
     cached_data = cache.get(cname)
     if cached_data:
         (conditions, hourly_forecasts, daily_forecasts, alerts) = cached_data
     else:
-        feed = IntellicastFeed(location.intellicast_id)
+        feed = IntellicastFeed(location['intellicast_id'])
         conditions, hourly_forecasts, daily_forecasts, alerts = feed.get_data()
         cache.set(cname, (conditions, hourly_forecasts, daily_forecasts, alerts), 1200)
         
