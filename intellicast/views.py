@@ -19,8 +19,13 @@ def weather_page(request):
     except AttributeError:
         zipcode = None
     
-    location = get_intellicast_location(zipcode)
-    (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
+    try:
+        location = get_intellicast_location(zipcode)
+        (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
+    except:
+        return render_to_response('intellicast/weather.html', {
+            'unavailable': True
+        }, context_instance = RequestContext(request))
     
     hourly_forecast_items = []
     for i in range(1, 24):
