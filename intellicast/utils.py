@@ -86,7 +86,13 @@ class IntellicastFeed:
             for attr in attrs:
                 value = node.getAttribute(attr)
                 mini_dict[attr] = value
-            daily_forecast_dict[mini_dict['DayNum']] = mini_dict
+            #Really hackity way to ensure we don't accidently get Pollen forecast here.
+            try:
+                mini_dict['PollenType']
+            except KeyError:
+                daily_forecast_dict[mini_dict['DayNum']] = mini_dict
+        
+        print "honk", daily_forecast_dict['2']
         
         alert_elements = xml.getElementsByTagName('Alert')
         alerts_dict = {}
