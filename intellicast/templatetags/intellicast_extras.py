@@ -40,7 +40,11 @@ class GetConditions(template.Node):
             conditions_badge = {
                 'zipcode': zipcode, 
                 'current_temp': conditions['TempF'], 
-                'icon_code' : conditions['IconCode']
+                'icon_code': conditions['IconCode'],
+                'feels_like': conditions['FeelsLikeF'],
+                'wind_direction': conditions['WndDirCardinal'],
+                'wind_speed': conditions['WndSpdMph'],
+                'sky': conditions['Sky'],
             }
             context[self.var_name] = conditions_badge
         except:
