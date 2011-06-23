@@ -10,6 +10,8 @@ from django.core.cache import cache
 from django.db.models import F, Q
 from django.shortcuts import get_object_or_404
 
+from PIL import Image
+from intellicast.utils import fetch_intellicast_map_image
 from intellicast.utils import get_intellicast_location, get_intellicast_data
 
 """
@@ -113,3 +115,49 @@ def get_weather_alerts(parser, token):
     args = token.split_contents()
     var_name = args[-1]
     return GetAlerts(var_name)
+
+
+
+
+class GetWeatherMapImage(template.Node):
+    def __init__(self, var_name):
+        self.var_name = var_name
+        
+    def render(self, context):
+        
+        try:
+            zipcode = settings.DEFAULT_ZIP_CODE
+        except AttributeError:
+            return ''
+        
+        
+        derp_img = fetch_intellicast_map_image()
+        
+        
+        honk = derp_img.crop( (160, 147, 290, 207) )
+        #honk = honk.load()
+        honker = honk.resize((130, 60))
+        honker = honker.save('media/intellicast/intellicast_map_cropped_' + zipcode + '.gif')
+        
+        winrar = Image.open(open('media/intellicast/intellicast_map_cropped_' + zipcode + '.gif', 'rb'))
+        map_img_url = 'intellicast/intellicast_map_cropped_' + zipcode + '.gif'
+
+        print "honker:", honker
+        print "map img url:", map_img_url
+
+        context[self.var_name] = map_img_url
+        return ''
+        
+@register.tag
+def get_weather_map_image(parser, token):
+    """
+    Get the weather alerts, if there are any, for the current site's default zipcode.
+    
+    Syntax:
+    {% get_weather_conditions as [var_name] %}
+    """
+    
+    args = token.split_contents()
+    var_name = args[-1]
+    return GetWeatherMapImage(var_name)
+

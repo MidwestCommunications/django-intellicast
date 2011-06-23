@@ -27,7 +27,7 @@
 {% for forecast in hourly_forecasts %}
 <li>
 <img src="{{MEDIA_URL}}intellicast_icons/wx_{{forecast.icon_code}}.png">
-    {{forecast.time_string}} - {{forecast.temp}} F, {{forecast.sky}}, Chance of Precipitation {{forecast.precip_chance}}
+    {{forecast.time_string}} - {{forecast.datetime}} (hour {{forecast.datetime.hour}} - {{forecast.temp}} F, {{forecast.sky}}, Chance of Precipitation {{forecast.precip_chance}}
 </li>
 {% endfor %}
 </ul>
@@ -64,6 +64,10 @@
 {% else %}
 <p>No Severe Weather Alerts.</p>
 {% endif %}
+
+<h1>Map Example</h1>
+{% get_weather_map_image as map_image_url %}
+<img src="{{MEDIA_URL}}{{map_image_url}}">
 
 </body>
 </html>

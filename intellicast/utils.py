@@ -91,9 +91,7 @@ class IntellicastFeed:
                 mini_dict['PollenType']
             except KeyError:
                 daily_forecast_dict[mini_dict['DayNum']] = mini_dict
-        
-        print "honk", daily_forecast_dict['2']
-        
+                
         alert_elements = xml.getElementsByTagName('Alert')
         alerts_dict = {}
         
@@ -189,10 +187,27 @@ def parse_intellicast_date(date_as_string):
     hour=int(time_split[0])
     minute=int(time_split[1])
     
-    if am_pm == 'PM':
+    if am_pm == 'PM' and hour != 12:
         hour = hour + 12
-    
-    if hour == 24:
+    if hour == 12 and am_pm == 'AM':
         hour = 0
             
     return datetime.datetime(year=year,month=month,day=day,hour=hour,minute=minute)
+    
+def fetch_intellicast_map_image():
+    import urllib2
+    from PIL import Image
+    
+    url = "http://services.intellicast.com/200904-01/158765827/Image/Radar/Radar2009.13L/SectorName/r03"
+    req = urllib2.Request(url)
+    f = urllib2.urlopen(req)
+    local = open('media/intellicast/intellicast_map.gif', 'wb')
+    local.write(f.read())
+    local.close()
+    
+    im=Image.open('media/intellicast/intellicast_map.gif')
+    return im
+    
+    
+    
+    
