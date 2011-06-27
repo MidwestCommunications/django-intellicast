@@ -3,6 +3,8 @@ from urllib import urlopen
 from xml.dom.minidom import parse
 
 from django.core.cache import cache
+from django.conf import settings
+from PIL import Image
 
 class IntellicastLocation:
     
@@ -197,17 +199,78 @@ def parse_intellicast_date(date_as_string):
 def fetch_intellicast_map_image():
     import urllib2
     from PIL import Image
+    from django.conf import settings
+    import os
     
     url = "http://services.intellicast.com/200904-01/158765827/Image/Radar/Radar2009.13L/SectorName/r03"
+    #url = "http://services.intellicast.com/200904-01/158765827/Image/Radar/Radar2009.13L/Loop/SectorName/r03"
     req = urllib2.Request(url)
     f = urllib2.urlopen(req)
-    local = open('media/intellicast/intellicast_map.gif', 'wb')
+    try:
+        local = open(settings.MEDIA_ROOT + 'intellicast/intellicast_map.gif', 'wb')
+    except IOError:
+        os.mkdir(settings.MEDIA_ROOT + 'intellicast/')
+        local = open(settings.MEDIA_ROOT + 'intellicast/intellicast_map.gif', 'wb')
+    
     local.write(f.read())
     local.close()
     
-    im=Image.open('media/intellicast/intellicast_map.gif')
+    im=Image.open(settings.MEDIA_ROOT + 'intellicast/intellicast_map.gif')
     return im
     
+def get_cropped_intellicast_image(zipcode):
+    """
+    Zipcode/Market Mapping:
+    54403 - Wausau
+    55811 - Duluth
+    54303 - Green Bay
+    49001 - Kalamazoo
+    48842 - Lansing
+    49422 - Holland
+    49017 - Battle Creek
+    54914 - Appleton
+    53085 - Sheboygan
+    55747 - Hibbing
+    49036 - Coldwater
+    47802 - Terre Haute
+    """
     
+    zipcode = str(zipcode)
     
+    cname = "intellicast_frontpage_maps"
+    fp_map_url = cache.get(cname)
+    if fp_map_url:
+        return 'intellicast/intellicast_map_cropped_' + zipcode + '.gif'
+    
+    midwest_img = fetch_intellicast_map_image()
+    
+    wausau = midwest_img.crop( (160, 147, 290, 207) ).resize((130, 60))
+    duluth = midwest_img.crop( (125, 91, 255, 151) ).resize((130, 60))
+    green_bay = midwest_img.crop( (218, 161, 348, 221) ).resize((130, 60))
+    terre_haute = midwest_img.crop( (225, 313, 355, 373 ) ).resize((130, 60))
+    kalamazoo = midwest_img.crop( (275, 221, 405, 281) ).resize((130, 60))
+    lansing = midwest_img.crop( (297, 203, 427, 263) ).resize((130, 60))
+    holland = midwest_img.crop( (260, 206, 390, 266) ).resize((130, 60))
+    battle_creek = midwest_img.crop( (284, 224, 284 + 130, 224 + 60) ).resize((130, 60))
+    appleton = midwest_img.crop( (200, 168, 200 + 130, 168 + 60) ).resize((130, 60))
+    sheboygan = midwest_img.crop( (218, 188, 218 + 130, 188 + 60) ).resize((130, 60))
+    hibbing = midwest_img.crop( (98, 66, 98 + 130, 66 + 60) ).resize((130, 60))
+    coldwater = midwest_img.crop( (284, 240, 284 + 130, 240 + 60) ).resize((130, 60))
+    
+    image_list = [(wausau, '54403'), (duluth, '55811'), (green_bay, '54303'),
+                  (terre_haute, '47802'), (kalamazoo, '49001'),
+                  (lansing, '48842'), (holland, '49422'), (battle_creek, '49017'),
+                  (appleton, '54914'), (sheboygan, '53085'),
+                  (hibbing, '55747'), (coldwater, '49036')]
+    
+    for image in image_list:
+        image_file = image[0].save(
+            settings.MEDIA_ROOT + 'intellicast/intellicast_map_cropped_' + 
+            image[1] + '.gif')
+        image_obj = Image.open(open(
+            settings.MEDIA_ROOT + 'intellicast/intellicast_map_cropped_' + 
+            image[1] + '.gif', 'rb'))
+    
+    cache.set(cname, 'data cached.', 60 * 15)
+    return 'intellicast/intellicast_map_cropped_' + zipcode + '.gif'
     

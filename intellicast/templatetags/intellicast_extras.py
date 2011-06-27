@@ -11,7 +11,7 @@ from django.db.models import F, Q
 from django.shortcuts import get_object_or_404
 
 from PIL import Image
-from intellicast.utils import fetch_intellicast_map_image
+from intellicast.utils import fetch_intellicast_map_image, get_cropped_intellicast_image
 from intellicast.utils import get_intellicast_location, get_intellicast_data
 
 """
@@ -131,21 +131,10 @@ class GetWeatherMapImage(template.Node):
             return ''
         
         
-        derp_img = fetch_intellicast_map_image()
         
         
-        honk = derp_img.crop( (160, 147, 290, 207) )
-        #honk = honk.load()
-        honker = honk.resize((130, 60))
-        honker = honker.save('media/intellicast/intellicast_map_cropped_' + zipcode + '.gif')
-        
-        winrar = Image.open(open('media/intellicast/intellicast_map_cropped_' + zipcode + '.gif', 'rb'))
-        map_img_url = 'intellicast/intellicast_map_cropped_' + zipcode + '.gif'
 
-        print "honker:", honker
-        print "map img url:", map_img_url
-
-        context[self.var_name] = map_img_url
+        context[self.var_name] = get_cropped_intellicast_image(zipcode)
         return ''
         
 @register.tag
