@@ -11,7 +11,6 @@ from django.db.models import F, Q
 from django.shortcuts import get_object_or_404
 
 from PIL import Image
-from intellicast.utils import fetch_intellicast_map_image, get_cropped_intellicast_image
 from intellicast.utils import get_intellicast_location, get_intellicast_data
 
 """
@@ -116,25 +115,17 @@ def get_weather_alerts(parser, token):
     var_name = args[-1]
     return GetAlerts(var_name)
 
-
-
-
 class GetWeatherMapImage(template.Node):
     def __init__(self, var_name):
         self.var_name = var_name
         
     def render(self, context):
-        
         try:
             zipcode = settings.DEFAULT_ZIP_CODE
         except AttributeError:
             return ''
         
-        
-        
-        
-
-        context[self.var_name] = get_cropped_intellicast_image(zipcode)
+        context[self.var_name] = 'intellicast/intellicast_animated_' + zipcode + '.gif'
         return ''
         
 @register.tag

@@ -30,6 +30,26 @@ CACHES = {
     }
 }
 
+import djcelery
+from celery.schedules import crontab
+djcelery.setup_loader()
+BROKER_BACKEND = "djkombu.transport.DatabaseTransport"
+#celery
+BROKER_HOST = "localhost"
+BROKER_PORT = 5672
+BROKER_USER = "guest"
+BROKER_PASSWORD = "guest"
+BROKER_VHOST = "/"
+
+CELERYD_CONCURRENCY = 1
+CELERYBEAT_SCHEDULE = {
+    'update-intellicast-images': {
+        'task': 'intellicast.update_map_images',
+        'schedule': crontab(),
+    },
+}
+
+
 INTERNAL_IPS=('127.0.0.1',)
 
 DEBUG_TOOLBAR_CONFIG = {
@@ -148,14 +168,9 @@ INSTALLED_APPS = (
     'intellicast',
     # Uncomment the next line to enable the admin:
     'django.contrib.admin',
-    # Uncomment the next line to enable admin documentation:
-    # 'django.contrib.admindocs',
+    'djcelery',
+    'djkombu',
 )
 
-# A sample logging configuration. The only tangible logging
-# performed by this configuration is to send an email to
-# the site admins on every HTTP 500 error.
-# See http://docs.djangoproject.com/en/dev/topics/logging for
-# more details on how to customize your logging configuration.
-
+# Location Configuration
 DEFAULT_ZIP_CODE = '70122'
