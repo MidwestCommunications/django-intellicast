@@ -1,10 +1,13 @@
 import datetime
-from urllib import urlopen
+import socket
+from urllib2 import urlopen
 from xml.dom.minidom import parse
 
 from django.core.cache import cache
 from django.conf import settings
 from PIL import Image
+
+socket.setdefaulttimeout(10)
 
 class IntellicastLocation:
     
