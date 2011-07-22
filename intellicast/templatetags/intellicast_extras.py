@@ -95,7 +95,7 @@ class GetAlerts(template.Node):
                     'bulletin': alerts_dict['Bulletin'],
                 }
                 alert_items.append(alert_item)
-
+            
             context[self.var_name] = alert_items
         except:
             pass

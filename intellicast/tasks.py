@@ -28,7 +28,9 @@ def update_map_images():
     frames_dict = {
         '54403': [], '55811': [], '54303': [], '47802': [], 
         '49001': [], '48842': [], '49422': [], '49017': [],
-        '54915': [], '53085': [], '55747': [], '49036': []
+        '54915': [], '53085': [], '55747': [], '49036': [], 
+        'wisconsin': [], 'michigan_lower': [], 'michigan_upper': [],
+        'minnesota': [], 'terre_haute': []
     }
     
     #Loop through the frames of the original images, cropping out frames for each region
@@ -49,6 +51,12 @@ def update_map_images():
             frames_dict['55747'].append(original_file.copy().crop((98,66,228,126)).resize((130,60)))
             frames_dict['49036'].append(original_file.copy().crop((284,240,414,300)).resize((130,60)))
             
+            frames_dict['wisconsin'].append(original_file.copy().crop(( 163,105,323,265 )).resize((160, 160)))
+            frames_dict['michigan_lower'].append(original_file.copy().crop(( 279,135,439,295 )).resize((160, 160)))
+            frames_dict['michigan_upper'].append(original_file.copy().crop(( 215,61,375,221 )).resize((160, 160)))
+            frames_dict['minnesota'].append(original_file.copy().crop(( 52,37,262,247 )).resize((160, 160)))
+            frames_dict['terre_haute'].append(original_file.copy().crop(( 208,212,368,372 )).resize((160, 160)))
+
             frame = frame + 1
         except EOFError:
             break
