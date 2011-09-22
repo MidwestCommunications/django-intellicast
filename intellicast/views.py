@@ -1,27 +1,22 @@
 # Create your views here.
 import datetime
-from string import capwords
+import time
 
 from django.conf import settings
+from django.shortcuts import get_object_or_404, render
 
-from django.contrib.sites.models import Site
-from django.core.cache import cache
-from django.template import RequestContext
-from django.shortcuts import get_object_or_404, render_to_response, redirect
-
-from intellicast.utils import get_intellicast_location, get_intellicast_data
-from intellicast.utils import parse_intellicast_date
+from intellicast.utils import parse_intellicast_date, parse_intellicast_time
+from intellicast.utils import get_intellicast_data, thirtysix_hour_outlook
 
 def weather_page(request):
-    
-    try:        
-        zipcode = request.GET.get('zipcode', settings.DEFAULT_ZIP_CODE)
-    except AttributeError:
-        zipcode = None
+    """
+    Main weather landing page.  Features current conditions, a 36 hour forecast,
+    and an interactive map (sadly, map is flash.)
+    """
     
     try:
-        location = get_intellicast_location(zipcode)
-        (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
+        zipcode = request.GET.get('zipcode', settings.DEFAULT_ZIP_CODE)
+        (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zipcode)
     except:
         return render_to_response('intellicast/weather.html', {
             'unavailable': True
@@ -46,7 +41,6 @@ def weather_page(request):
             'wind_direction': forecast_dict['WndDirCardinal'],
             'lastofday': last_of_day
         }
-        
         hourly_forecast_items.append(forecast_clean)
     
     daily_forecast_items = []
@@ -65,21 +59,14 @@ def weather_page(request):
             'wind_speed': forecast_dict['WndSpdMph'],
             'wind_direction': forecast_dict['WndDirCardinal'],
         }
-        
         daily_forecast_items.append(forecast_clean)
     
     (forecast_12hr, forecast_24hr, forecast_36hr) = thirtysix_hour_outlook(daily_forecasts)
-
     
-    todays_date = datetime.datetime.now()
-    tomorrows_date = datetime.datetime.now() + datetime.timedelta(days=1)
-    
-    template_name = "intellicast/weather.html"
-    
-    return render_to_response(template_name, {
+    return render(request, 'intellicast/weather.html', {
         'location': location,
-        'todays_date': todays_date,
-        'tomorrows_date': tomorrows_date,
+        'todays_date': datetime.datetime.now(),
+        'tomorrows_date': datetime.datetime.now() + datetime.timedelta(days=1),
         'current_conditions': conditions,
         
         'forecast_12hr': forecast_12hr,
@@ -89,7 +76,7 @@ def weather_page(request):
         'daily_forecasts': daily_forecast_items,
         'hourly_forecasts': hourly_forecast_items,
         'unavailable': False
-    }, context_instance = RequestContext(request))    
+    })
 
 def daily_weather_detail(request, year=None, month=None, day=None):
     
@@ -100,7 +87,6 @@ def daily_weather_detail(request, year=None, month=None, day=None):
             'unavailable': True
         }, context_instance = RequestContext(request)) 
     
-    
     difference = forecast_date - datetime.date.today()
     day_index = str(1 + difference.days)
     
@@ -109,8 +95,7 @@ def daily_weather_detail(request, year=None, month=None, day=None):
     except AttributeError:
         zipcode = None
     
-    location = get_intellicast_location(zipcode)
-    (conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(location)
+    (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zipcode)
     
     if int(day_index) > 1:
         prev_date = forecast_date - datetime.timedelta(days=1)
@@ -131,7 +116,7 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         'sky': forecast['SkyTextDay'],
         'icon_code': forecast['IconCodeDay'],
         'humidity': forecast['RelHumidity'],
-        'sunrise': forecast['Sunrise'],
+        'sunrise': parse_intellicast_time(forecast['Sunrise']),
         'uv_index': forecast['UvIdx'],
         'uv_description': forecast['UvDescr'],
         'date_string': forecast['ValidDateLocal'],
@@ -145,14 +130,12 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         'sky': forecast['SkyTextNight'],
         'icon_code': forecast['IconCodeNight'],
         'humidity': forecast['RelHumidityNight'],
-        'sunset': forecast['Sunset'],
+        'sunset': parse_intellicast_time(forecast['Sunset']),
         'moon_phase': forecast['MoonPhaseText'],
         'datetime': parse_intellicast_date(forecast['ValidDateLocal'])
     }
     
-    template_name = 'intellicast/daily_weather_detail.html'
-    
-    return render_to_response(template_name, {
+    return render(request, 'intellicast/daily_weather_detail.html', {
         'location': location,
         'forecast_date': forecast_date,
         'prev_date': prev_date,
@@ -160,76 +143,9 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         'day_forecast': day_forecast_dict,
         'night_forecast': night_forecast_dict,
         'unavailable': False
-    }, context_instance = RequestContext(request))  
+    })  
     
-def thirtysix_hour_outlook(daily_forecasts):
-    """
-    Returns dictionaries for a 36 hour extended forecast as seen on mwc
-    weather sites.
-    """
-    
-    todays_forecast = daily_forecasts['1']
-    if todays_forecast['IconCodeDay'] == '86':
-        todays_forecast_dict = None
-    else:
-        todays_forecast_dict = {
-            'shortname': 'Today',
-            'temp': todays_forecast['HiTempF'],
-            'temp_type': 'High',
-            'precip_chance': todays_forecast['PrecipChanceDay'],
-            'wind_speed': todays_forecast['WndSpdMph'],
-            'wind_direction': todays_forecast['WndDirCardinal'],
-            'sky': todays_forecast['SkyTextDay'],
-            'icon_code': todays_forecast['IconCodeDay']
-        }
-    
-    tonights_forecast_dict = {
-        'shortname': 'Tonight',
-        'temp': todays_forecast['LoTempF'],
-        'temp_type': 'Low',
-        'precip_chance': todays_forecast['PrecipChanceNight'],
-        'wind_speed': todays_forecast['WndSpdMphNight'],
-        'wind_direction': todays_forecast['WndDirCardinalNight'],
-        'sky': todays_forecast['SkyTextNight'],
-        'icon_code': todays_forecast['IconCodeNight']
-    }
-    
-    tomorrows_forecast = daily_forecasts['2']
-    tomorrows_forecast_dict = {
-        'shortname': 'Tomorrow',
-        'temp': tomorrows_forecast['HiTempF'],
-        'temp_type': 'High',
-        'precip_chance': tomorrows_forecast['PrecipChanceDay'],
-        'wind_speed': tomorrows_forecast['WndSpdMph'],
-        'wind_direction': tomorrows_forecast['WndDirCardinal'],
-        'sky': tomorrows_forecast['SkyTextDay'],
-        'icon_code': tomorrows_forecast['IconCodeDay']
-    }
-    
-    if todays_forecast_dict:
-        tomorrow_nights_forecast_dict = None
-    else:
-        tomorrow_nights_forecast_dict = {
-            'shortname': 'Tomorrow Night',
-            'temp': tomorrows_forecast['LoTempF'],
-            'temp_type': 'Low',
-            'precip_chance': tomorrows_forecast['PrecipChanceNight'],
-            'wind_speed': tomorrows_forecast['WndSpdMph'],
-            'wind_direction': tomorrows_forecast['WndDirCardinal'],
-            'sky': tomorrows_forecast['SkyTextDay'],
-            'icon_code': tomorrows_forecast['IconCodeDay']
-        }
-    
-    if todays_forecast_dict:
-        twelve_hr_forecast = todays_forecast_dict
-        twentyfour_hr_forecast = tonights_forecast_dict
-        thirtysix_hr_forecast = tomorrows_forecast_dict
-    else:
-        twelve_hr_forecast = tonights_forecast_dict
-        twentyfour_hr_forecast = tomorrows_forecast_dict
-        thirtysix_hr_forecast = tomorrow_nights_forecast_dict
-    
-    return twelve_hr_forecast, twentyfour_hr_forecast, thirtysix_hr_forecast
+
     
     
     

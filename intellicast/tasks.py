@@ -3,7 +3,78 @@ import urllib2
 from PIL import Image
 from celery.decorators import task
 from django.conf import settings
+from django.core.cache import cache
 from images2gif import writeGif
+
+from urllib2 import urlopen
+from xml.dom.minidom import parse
+
+
+@task(name='intellicast.fetch_intellicast_data')
+def fetch_intellicast_data(for_zip=None):
+    if not for_zip:
+        zipcodes_list = ['54403','55811','54303','47802','49001','48842',
+            '49422','49017','54915','53085','55747','49036']
+    else:
+        zipcodes_list = [for_zip]
+
+    for zipcode in zipcodes_list:
+        cached_location = cache.get('intellicast_location_' + zipcode)
+        if cached_location:
+            location = cached_location
+        else:
+            location_xml = parse(urlopen('http://services.intellicast.com/' + 
+                    '200904-01/158765827/Locations/Cities/' + zipcode))
+                    
+            location_node = location_xml.getElementsByTagName('City')[0]
+            location = {
+                'intellicast_id': location_node.getAttribute('Id'),
+                'city': location_node.getAttribute('Name'),
+                'state': location_node.getAttribute('StateAbbr'),
+                'zipcode': zipcode,
+                'latitude': location_node.getAttribute('Latitude'),
+                'longitude': location_node.getAttribute('Longitude'),
+            }
+            # Cache locations for 12 hours at a time per intellicast business rules.
+            cache.set('intellicast_location_' + str(zipcode), location, 60 * 60 * 12)
+        
+        xml = parse(urlopen('http://services.intellicast.com/200904-01/' + 
+                '158765827/Weather/Report/' + location['intellicast_id']))
+            
+        conditions_dict = {}
+        conditions_node = xml.getElementsByTagName('CurrentObservation')[0]
+        for attr in conditions_node.attributes.keys():
+            conditions_dict[attr] = conditions_node.getAttribute(attr)
+                
+        hourly_forecast_dict = {}
+        for node in xml.getElementsByTagName('Hour'):
+            mini_dict = {}
+            for attr in node.attributes.keys():
+                mini_dict[attr] = node.getAttribute(attr)
+            hourly_forecast_dict[mini_dict['HourNum']] = mini_dict
+        
+        daily_forecast_dict = {}
+        daily_forecast_node = xml.getElementsByTagName('DailyForecast')[0]
+        for node in daily_forecast_node.getElementsByTagName('Day'):
+            mini_dict = {}
+            for attr in node.attributes.keys():
+                mini_dict[attr] =  node.getAttribute(attr)
+            daily_forecast_dict[mini_dict['DayNum']] = mini_dict
+        
+        alerts_dict = {}
+        alert_elements = xml.getElementsByTagName('Alert')
+        if alert_elements:
+            for i, node in enumerate(alert_elements, 1):
+                mini_dict = {}
+                for attr in node.attributes.keys():
+                    mini_dict[attr] = node.getAttribute(attr)
+                alerts_dict[i] = mini_dict
+        cache.set('intellicast_data_for_' + str(zipcode), 
+            (location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict), 60 * 6)
+        if for_zip:
+            return location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict
+
+
 
 @task(name='intellicast.update_map_images')
 def update_map_images():

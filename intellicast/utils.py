@@ -1,5 +1,8 @@
 import datetime
-import socket
+#from time import strptime
+#from time import mktime
+import time
+
 from urllib2 import urlopen
 from xml.dom.minidom import parse
 
@@ -7,194 +10,91 @@ from django.core.cache import cache
 from django.conf import settings
 from PIL import Image
 
-socket.setdefaulttimeout(10)
+from intellicast.tasks import fetch_intellicast_data
 
-class IntellicastLocation:
-    
-    def __init__(self, zipcode):
-        
-        self.zipcode = zipcode
-        
-        self.location_url = 'http://services.intellicast.com/200904-01/158765827/Locations/Cities/' + zipcode
-        self.options = ['Id', 'Name', 'StateAbbr', 'StateName', 'Latitude', 'Longitude']
-        
-        infos = self.get_data()
-        
-        self.location_id = infos['Id']
-        self.city = infos['Name']
-        self.state = infos['StateAbbr']
-        self.lat = infos['Latitude']
-        self.lon = infos['Longitude']
-            
-    def get_data(self):
-        
-        try:
-            xml = parse(urlopen(self.location_url))
-        except:
-            return "No Feed Found."
-            
-        options_dict = {}
-        already_fetched = False
-        for node in xml.getElementsByTagName('City'):
-            if already_fetched:
-                break
-            
-            attrs = node.attributes.keys()
-            for attr in attrs:
-                if attr in self.options:
-                    value = node.getAttribute(attr)
-                    options_dict[attr] = value        
-            already_fetched = True
-        return options_dict
-
-class IntellicastFeed:
-    
-    def __init__(self, intellicast_id):
-        self.location_id = intellicast_id
-        self.conditions_url = 'http://services.intellicast.com/200904-01/158765827/Weather/Report/' + self.location_id
-        self.options = ['ReportTime', 'TempF', 'IconCode', 'Sky', 
-                        'ValidDateLocal', 'ValidDateUtc', 'RelHumidity', 
-                        'WndSpdMph', 'WndDirDegr', 'WndDirCardinal']
-
-    def get_data(self):
-        
-        try:
-            xml = parse(urlopen(self.conditions_url))
-        except:
-            return "No Feed Found."
-        
-        conditions_dict = {}
-        already_fetched = False
-        for node in xml.getElementsByTagName('CurrentObservation'):
-            if already_fetched:
-                break
-            
-            attrs = node.attributes.keys()
-            for attr in attrs:
-                value = node.getAttribute(attr)
-                conditions_dict[attr] = value
-            already_fetched = True
-        
-        hourly_forecast_dict = {}
-        for node in xml.getElementsByTagName('Hour'):
-            mini_dict = {}
-            attrs = node.attributes.keys()
-            for attr in attrs:
-                value = node.getAttribute(attr)
-                mini_dict[attr] = value
-            hourly_forecast_dict[mini_dict['HourNum']] = mini_dict
-            
-        daily_forecast_dict = {}
-        for node in xml.getElementsByTagName('Day'):
-            mini_dict = {}
-            attrs = node.attributes.keys()
-            for attr in attrs:
-                value = node.getAttribute(attr)
-                mini_dict[attr] = value
-            #Really hackity way to ensure we don't accidently get Pollen forecast here.
-            try:
-                mini_dict['PollenType']
-            except KeyError:
-                daily_forecast_dict[mini_dict['DayNum']] = mini_dict
-                
-        alert_elements = xml.getElementsByTagName('Alert')
-        alerts_dict = {}
-        
-        if alert_elements:
-            for i, node in enumerate(xml.getElementsByTagName('Alert'), 1):
-                mini_dict = {}
-                attrs = node.attributes.keys()
-                for attr in attrs:
-                    value = node.getAttribute(attr)
-                    mini_dict[attr] = value
-                alerts_dict[i] = mini_dict
-            
-        return conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict
-
-def get_intellicast_location_old(zipcode):
-    
-    cname_location = 'intellicast_location_' + str(zipcode)
-    cached_data_location = cache.get(cname_location)
-    if cached_data_location:
-        location = cached_data_location
-    else:
-        try:
-            location = WeatherLocation.objects.get(zipcode=zipcode)
-        except:
-            try:
-                i_location = IntellicastLocation(zipcode)
-            except:
-                return render_to_response('intellicast/weather.html', {
-                    'unavailable': True,
-                }, context_instance = RequestContext(request))
-                
-                
-            location = WeatherLocation.objects.create(
-                intellicast_id=i_location.location_id,
-                city=i_location.city,
-                state=i_location.state,
-                zipcode=zipcode,
-                latitude=i_location.lat,
-                longitude=i_location.lon
-            )
-        cache.set(cname_location, location, 60 * 60 * 24)
-    return location
-
-
-
-
-def get_intellicast_location(zipcode):
-    
-    cname_location = 'intellicast_location_' + str(zipcode)
-    cached_data_location = cache.get(cname_location)
-    if cached_data_location:
-        location = cached_data_location
-    else:
-        i_location = IntellicastLocation(zipcode)
-        location = {
-            'intellicast_id': i_location.location_id,
-            'city': i_location.city,
-            'state': i_location.state,
-            'zipcode': zipcode,
-            'latitude': i_location.lat,
-            'longitude': i_location.lon
-        }
-        cache.set(cname_location, location, 60 * 60 * 24)
-    return location
-        
-
-
-def get_intellicast_data(location):
-    
-    cname = 'intellicast_feed_data_' + str(location['zipcode'])
+def get_intellicast_data(zipcode):
+    """
+    Returns a set of intellicast data for the specified zipcode. In practice,
+    this data should always be cached for our station's default zipcodes.
+    """
+    cname = 'intellicast_data_for_' + str(zipcode)
     cached_data = cache.get(cname)
     if cached_data:
-        (conditions, hourly_forecasts, daily_forecasts, alerts) = cached_data
+        return cached_data
     else:
-        feed = IntellicastFeed(location['intellicast_id'])
-        conditions, hourly_forecasts, daily_forecasts, alerts = feed.get_data()
-        cache.set(cname, (conditions, hourly_forecasts, daily_forecasts, alerts), 1200)
-        
-    return conditions, hourly_forecasts, daily_forecasts, alerts
+        return fetch_intellicast_data(zipcode)
 
 def parse_intellicast_date(date_as_string):    
-    date_list = date_as_string.split(' ')
-    date = date_list[0]
-    time = date_list[1]
-    am_pm = date_list[2]
+    return datetime.datetime.strptime(date_as_string, '%m/%d/%Y %I:%M:%S %p')
     
-    date_split = date.split('/')
-    month=int(date_split[0])
-    day=int(date_split[1])
-    year=int(date_split[2])
+def parse_intellicast_time(time_as_string):    
+    return datetime.datetime.fromtimestamp(time.mktime(time.strptime(time_as_string, '%I:%M:%S %p'))).time
+
+def thirtysix_hour_outlook(daily_forecasts):
+    """
+    Returns dictionaries for a 36 hour extended forecast as seen on mwc
+    weather sites.
+    """
     
-    time_split = time.split(':')
-    hour=int(time_split[0])
-    minute=int(time_split[1])
+    todays_forecast = daily_forecasts['1']
+    if todays_forecast['IconCodeDay'] == '86':
+        todays_forecast_dict = None
+    else:
+        todays_forecast_dict = {
+            'shortname': 'Today',
+            'temp': todays_forecast['HiTempF'],
+            'temp_type': 'High',
+            'precip_chance': todays_forecast['PrecipChanceDay'],
+            'wind_speed': todays_forecast['WndSpdMph'],
+            'wind_direction': todays_forecast['WndDirCardinal'],
+            'sky': todays_forecast['SkyTextDay'],
+            'icon_code': todays_forecast['IconCodeDay']
+        }
     
-    if am_pm == 'PM' and hour != 12:
-        hour = hour + 12
-    if hour == 12 and am_pm == 'AM':
-        hour = 0
-            
-    return datetime.datetime(year=year,month=month,day=day,hour=hour,minute=minute)
+    tonights_forecast_dict = {
+        'shortname': 'Tonight',
+        'temp': todays_forecast['LoTempF'],
+        'temp_type': 'Low',
+        'precip_chance': todays_forecast['PrecipChanceNight'],
+        'wind_speed': todays_forecast['WndSpdMphNight'],
+        'wind_direction': todays_forecast['WndDirCardinalNight'],
+        'sky': todays_forecast['SkyTextNight'],
+        'icon_code': todays_forecast['IconCodeNight']
+    }
+    
+    tomorrows_forecast = daily_forecasts['2']
+    tomorrows_forecast_dict = {
+        'shortname': 'Tomorrow',
+        'temp': tomorrows_forecast['HiTempF'],
+        'temp_type': 'High',
+        'precip_chance': tomorrows_forecast['PrecipChanceDay'],
+        'wind_speed': tomorrows_forecast['WndSpdMph'],
+        'wind_direction': tomorrows_forecast['WndDirCardinal'],
+        'sky': tomorrows_forecast['SkyTextDay'],
+        'icon_code': tomorrows_forecast['IconCodeDay']
+    }
+    
+    if todays_forecast_dict:
+        tomorrow_nights_forecast_dict = None
+    else:
+        tomorrow_nights_forecast_dict = {
+            'shortname': 'Tomorrow Night',
+            'temp': tomorrows_forecast['LoTempF'],
+            'temp_type': 'Low',
+            'precip_chance': tomorrows_forecast['PrecipChanceNight'],
+            'wind_speed': tomorrows_forecast['WndSpdMph'],
+            'wind_direction': tomorrows_forecast['WndDirCardinal'],
+            'sky': tomorrows_forecast['SkyTextDay'],
+            'icon_code': tomorrows_forecast['IconCodeDay']
+        }
+    
+    if todays_forecast_dict:
+        twelve_hr_forecast = todays_forecast_dict
+        twentyfour_hr_forecast = tonights_forecast_dict
+        thirtysix_hr_forecast = tomorrows_forecast_dict
+    else:
+        twelve_hr_forecast = tonights_forecast_dict
+        twentyfour_hr_forecast = tomorrows_forecast_dict
+        thirtysix_hr_forecast = tomorrow_nights_forecast_dict
+    
+    return twelve_hr_forecast, twentyfour_hr_forecast, thirtysix_hr_forecast
