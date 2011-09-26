@@ -83,9 +83,9 @@ def daily_weather_detail(request, year=None, month=None, day=None):
     forecast_date = datetime.date(year=int(year), month=int(month), day=int(day))
     if forecast_date < datetime.date.today():
         template_name = 'intellicast/daily_weather_detail.html'
-        return render_to_response(template_name, {
+        return render(request, 'intellicast/daily_weather_detail.html', {
             'unavailable': True
-        }, context_instance = RequestContext(request)) 
+        })
     
     difference = forecast_date - datetime.date.today()
     day_index = str(1 + difference.days)
