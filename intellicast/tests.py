@@ -1,16 +1,26 @@
-"""
-This file demonstrates writing tests using the unittest module. These will pass
-when you run "manage.py test".
-
-Replace this with more appropriate tests for your application.
-"""
-
 from django.test import TestCase
+from django.core.urlresolvers import reverse
+from django.conf import settings
 
 
-class SimpleTest(TestCase):
-    def test_basic_addition(self):
-        """
-        Tests that 1 + 1 always equals 2.
-        """
-        self.assertEqual(1 + 1, 2)
+class ViewTestCase(TestCase):
+    def test_landing_page(self):
+        # test normal GET
+        r = self.client.get(reverse('intellicast_weather_page'))
+        self.assertEqual(r.status_code, 200)
+
+        # test GET with zipcode
+        r = self.client.get(reverse('intellicast_weather_page'), {'zipcode': '54481'})
+        self.assertEqual(r.status_code, 200)
+
+        # test GET with nonexistent city name
+        r = self.client.get(reverse('intellicast_weather_page'), {'zipcode': 'aoeuaoehudaotnehd'})
+        self.assertEqual(r.status_code, 200)
+        
+        # test GET with city name
+        r = self.client.get(reverse('intellicast_weather_page'), {'zipcode': 'Detroit,MI'})
+        self.assertEqual(r.status_code, 200)
+
+        # test GET with city name with space
+        r = self.client.get(reverse('intellicast_weather_page'), {'zipcode': 'Detroit, MI'})
+        self.assertEqual(r.status_code, 200)
