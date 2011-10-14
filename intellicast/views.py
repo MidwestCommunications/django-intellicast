@@ -17,7 +17,7 @@ def weather_page(request):
     try:
         zipcode = request.GET.get('zipcode', settings.DEFAULT_ZIP_CODE)
         (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(str(int(zipcode)))
-    except ValueError, IndexError:
+    except (ValueError, IndexError):
         return render(request, 'intellicast/weather.html', {'unavailable': True})
     
     hourly_forecast_items = []
