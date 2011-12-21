@@ -145,5 +145,6 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         'next_date': next_date,
         'day_forecast': day_forecast_dict,
         'night_forecast': night_forecast_dict,
-        'unavailable': False
+        'unavailable': False,
+        'geo_form': geo_form,
     })  
