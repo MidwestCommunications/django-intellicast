@@ -174,3 +174,5 @@ INSTALLED_APPS = (
 
 # Location Configuration
 DEFAULT_ZIP_CODE = '70122'
+
+from local_settings import *

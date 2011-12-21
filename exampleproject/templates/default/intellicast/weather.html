@@ -7,11 +7,17 @@
 <h1>Weather informaiton unavailable.</h1>
 {% else %}
 
-<h1>Weather for {{city}}, {{state}} {{zipcode}}</h1>
+<h1>Weather for {{location.city}}, {{location.state}} {{location.zipcode}}</h1>
+
+<h2>Change Location</h2>
+<form>
+    {{ geo_form }}
+    <input type="submit"/>
+</form>
 
 <h2>Current Conditions</h2>
 
-<img src="{{MEDIA_URL}}intellicast_icons/wx_{{current_conditions.IconCode}}.png">
+<img src="{{MEDIA_URL}}intellicast_icons/wx_{{current_conditionsIconCode}}.png">
 
 <ul>
     <li>Temperature - {{ current_conditions.TempF }} F</li>

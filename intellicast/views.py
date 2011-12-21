@@ -5,6 +5,9 @@ import time
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render
 
+from loci.utils import geolocate_request
+from loci.forms import GeolocationForm
+
 from intellicast.utils import parse_intellicast_date, parse_intellicast_time
 from intellicast.utils import get_intellicast_data, thirtysix_hour_outlook
 
@@ -15,8 +18,9 @@ def weather_page(request):
     """
     
     try:
-        zipcode = request.GET.get('zipcode', settings.DEFAULT_ZIP_CODE)
-        (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(str(int(zipcode)))
+        rloc = geolocate_request(request)
+        geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
+        (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
     except (ValueError, IndexError):
         return render(request, 'intellicast/weather.html', {'unavailable': True})
     
@@ -73,7 +77,8 @@ def weather_page(request):
 
         'daily_forecasts': daily_forecast_items,
         'hourly_forecasts': hourly_forecast_items,
-        'unavailable': False
+        'unavailable': False,
+        'geo_form': geo_form,
     })
 
 def daily_weather_detail(request, year=None, month=None, day=None):
@@ -89,8 +94,9 @@ def daily_weather_detail(request, year=None, month=None, day=None):
     day_index = str(1 + difference.days)
     
     try:
-        zipcode = request.GET.get('zipcode', settings.DEFAULT_ZIP_CODE)
-        (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(str(int(zipcode)))
+        rloc = geolocate_request(request)
+        geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
+        (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
     except (ValueError, IndexError):
         return render(request, 'intellicast/daily_weather_detail.html', {'unavailable': True})
     
@@ -141,12 +147,3 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         'night_forecast': night_forecast_dict,
         'unavailable': False
     })  
-    
-
-    
-    
-    
-
-
-
-    

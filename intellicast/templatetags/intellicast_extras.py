@@ -5,6 +5,8 @@ import string
 from django import template
 from django.conf import settings
 
+from loci.utils import geocode, geolocate_request
+
 from intellicast.utils import get_intellicast_data
 
 """
@@ -24,13 +26,18 @@ class GetConditions(template.Node):
     def render(self, context):
         
         try:
-            zipcode = settings.DEFAULT_ZIP_CODE
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zipcode)
+            rloc = geolocate_request(context['request'])
+        except KeyError:
+            rloc = geocode(settings.DEFAULT_ZIP_CODE)
+        try:
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
         except:
+            if settings.DEBUG:
+                raise
             return ''
             
         conditions_badge = {
-            'zipcode': zipcode, 
+            'zipcode': rloc.zip_code, 
             'current_temp': conditions['TempF'], 
             'icon_code': conditions['IconCode'],
             'feels_like': conditions['FeelsLikeF'],
@@ -60,9 +67,14 @@ class GetAlerts(template.Node):
         
     def render(self, context):
         try:
-            zipcode = settings.DEFAULT_ZIP_CODE
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zipcode)
+            rloc = geolocate_request(context['request'])
+        except KeyError:
+            rloc = geocode(settings.DEFAULT_ZIP_CODE)
+        try:
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
         except:
+            if settings.DEBUG:
+                raise
             return ''
         try:
             alert_items = []
