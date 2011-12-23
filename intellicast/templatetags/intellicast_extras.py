@@ -24,11 +24,7 @@ class GetConditions(template.Node):
         self.var_name = var_name
         
     def render(self, context):
-        
-        try:
-            rloc = geolocate_request(context['request'])
-        except KeyError:
-            rloc = geocode(settings.DEFAULT_ZIP_CODE)
+        rloc = geocode(settings.DEFAULT_ZIP_CODE)
         try:
             (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
         except:
@@ -66,10 +62,7 @@ class GetAlerts(template.Node):
         self.var_name = var_name
         
     def render(self, context):
-        try:
-            rloc = geolocate_request(context['request'])
-        except KeyError:
-            rloc = geocode(settings.DEFAULT_ZIP_CODE)
+        rloc = geocode(settings.DEFAULT_ZIP_CODE)
         try:
             (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
         except:
