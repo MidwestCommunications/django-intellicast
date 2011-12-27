@@ -1,7 +1,4 @@
 import datetime
-#from time import strptime
-#from time import mktime
-import time
 
 from urllib2 import urlopen
 from xml.dom.minidom import parse
@@ -28,7 +25,7 @@ def parse_intellicast_date(date_as_string):
     return datetime.datetime.strptime(date_as_string, '%m/%d/%Y %I:%M:%S %p')
     
 def parse_intellicast_time(time_as_string):    
-    return datetime.datetime.fromtimestamp(time.mktime(time.strptime(time_as_string, '%I:%M:%S %p'))).time
+    return datetime.datetime.strptime(time_as_string, '%I:%M:%S %p').time
 
 def thirtysix_hour_outlook(daily_forecasts):
     """
