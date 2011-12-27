@@ -21,6 +21,7 @@ def weather_page(request):
         rloc = geolocate_request(request)
         if not rloc.zip_code:
             rloc = geocode(settings.DEFAULT_ZIP_CODE)
+            rloc.zip_code = settings.DEFAULT_ZIP_CODE
         geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
         (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
     except (ValueError, IndexError):
@@ -99,6 +100,7 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         rloc = geolocate_request(request)
         if not rloc.zip_code:
             rloc = geocode(settings.DEFAULT_ZIP_CODE)
+            rloc.zip_code = settings.DEFAULT_ZIP_CODE
         geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
         (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
     except (ValueError, IndexError):
