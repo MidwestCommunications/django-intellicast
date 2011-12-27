@@ -88,10 +88,7 @@ def daily_weather_detail(request, year=None, month=None, day=None):
     
     forecast_date = datetime.date(year=int(year), month=int(month), day=int(day))
     if forecast_date < datetime.date.today():
-        template_name = 'intellicast/daily_weather_detail.html'
-        return render(request, 'intellicast/daily_weather_detail.html', {
-            'unavailable': True
-        })
+        return render(request, 'intellicast/daily_weather_detail.html', {'unavailable': True})
     
     difference = forecast_date - datetime.date.today()
     day_index = str(1 + difference.days)
@@ -115,8 +112,12 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         next_date = forecast_date + datetime.timedelta(days=1)
     else:
         next_date = None
-    
-    forecast = daily_forecasts[day_index]
+   
+    try:
+        forecast = daily_forecasts[day_index]
+    except KeyError:
+        return render(request, 'intellicast/daily_weather_detail.html', {'unavailable': True})
+
     day_forecast_dict = {
         'high_temp': forecast['HiTempF'],
         'precip_chance': forecast['PrecipChanceDay'],
