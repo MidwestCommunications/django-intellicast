@@ -11,6 +11,20 @@ from loci.forms import GeolocationForm
 from intellicast.utils import parse_intellicast_date, parse_intellicast_time
 from intellicast.utils import get_intellicast_data, thirtysix_hour_outlook
 
+
+def _get_request_location(request):
+    location = geolocate_request(request)
+    # need to make sure the location has a ZIP for intellicast
+    if not location.zip_code:
+        try:
+            zip_code = get_current_site(request).profile.zip_code
+        except AttributeError:
+            zip_code = settings.DEFAULT_ZIP_CODE
+        location = geocode(zip_code)
+        location.zip_code = zip_code
+    return location
+
+
 def weather_page(request):
     """
     Main weather landing page.  Features current conditions, a 36 hour forecast,
@@ -18,10 +32,7 @@ def weather_page(request):
     """
     
     try:
-        rloc = geolocate_request(request)
-        if not rloc.zip_code:
-            rloc = geocode(settings.DEFAULT_ZIP_CODE)
-            rloc.zip_code = settings.DEFAULT_ZIP_CODE
+        rloc = _get_request_location(request)
         geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
         (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
     except (ValueError, IndexError):
@@ -94,10 +105,7 @@ def daily_weather_detail(request, year=None, month=None, day=None):
     day_index = str(1 + difference.days)
     
     try:
-        rloc = geolocate_request(request)
-        if not rloc.zip_code:
-            rloc = geocode(settings.DEFAULT_ZIP_CODE)
-            rloc.zip_code = settings.DEFAULT_ZIP_CODE
+        rloc = _get_request_location(request)
         geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
         (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
     except (ValueError, IndexError):

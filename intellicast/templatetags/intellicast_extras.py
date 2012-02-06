@@ -4,6 +4,7 @@ import string
 
 from django import template
 from django.conf import settings
+from django.contrib.sites.models import get_current_site
 
 from loci.utils import geocode, geolocate_request
 
@@ -24,16 +25,20 @@ class GetConditions(template.Node):
         self.var_name = var_name
         
     def render(self, context):
-        rloc = geocode(settings.DEFAULT_ZIP_CODE)
         try:
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
+            request = context['request']
+            zip_code = get_current_site(request).profile.zip_code
+        except (KeyError, AttributeError):
+            zip_code = settings.DEFAULT_ZIP_CODE
+        try:
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
         except:
             if settings.DEBUG:
                 raise
             return ''
             
         conditions_badge = {
-            'zipcode': rloc.zip_code, 
+            'zipcode': zip_code, 
             'current_temp': conditions['TempF'], 
             'icon_code': conditions['IconCode'],
             'feels_like': conditions['FeelsLikeF'],
@@ -62,9 +67,13 @@ class GetAlerts(template.Node):
         self.var_name = var_name
         
     def render(self, context):
-        rloc = geocode(settings.DEFAULT_ZIP_CODE)
         try:
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
+            request = context['request']
+            zip_code = get_current_site(request).profile.zip_code
+        except (KeyError, AttributeError):
+            zip_code = settings.DEFAULT_ZIP_CODE
+        try:
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
         except:
             if settings.DEBUG:
                 raise
