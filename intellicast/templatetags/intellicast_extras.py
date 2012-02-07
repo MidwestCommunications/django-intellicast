@@ -72,8 +72,13 @@ class GetAlerts(template.Node):
             zip_code = get_current_site(request).profile.zip_code
         except (KeyError, AttributeError):
             zip_code = settings.DEFAULT_ZIP_CODE
+        else:
+            if not zip_code:
+                zip_code = settings.DEFAULT_ZIP_CODE
         try:
             (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
+        except TypeError:
+            return ''
         except:
             if settings.DEBUG:
                 raise

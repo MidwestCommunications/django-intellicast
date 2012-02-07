@@ -4,6 +4,7 @@ import time
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render
+from django.contrib.sites.models import get_current_site
 
 from loci.utils import geolocate_request, geocode
 from loci.forms import GeolocationForm
@@ -20,6 +21,9 @@ def _get_request_location(request):
             zip_code = get_current_site(request).profile.zip_code
         except AttributeError:
             zip_code = settings.DEFAULT_ZIP_CODE
+        else:
+            if not zip_code:
+                zip_code = settings.DEFAULT_ZIP_CODE
         location = geocode(zip_code)
         location.zip_code = zip_code
     return location
@@ -35,7 +39,7 @@ def weather_page(request):
         rloc = _get_request_location(request)
         geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
         (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
-    except (ValueError, IndexError):
+    except TypeError:
         return render(request, 'intellicast/weather.html', {'unavailable': True})
     
     hourly_forecast_items = []
@@ -108,7 +112,7 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         rloc = _get_request_location(request)
         geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
         (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
-    except (ValueError, IndexError):
+    except TypeError:
         return render(request, 'intellicast/daily_weather_detail.html', {'unavailable': True})
     
     if int(day_index) > 1:
