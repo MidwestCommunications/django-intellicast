@@ -5,6 +5,7 @@ import time
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render
 from django.contrib.sites.models import get_current_site
+from django.utils import timezone
 
 from loci.utils import geolocate_request, geocode
 from loci.forms import GeolocationForm
@@ -83,10 +84,11 @@ def weather_page(request):
     
     (forecast_12hr, forecast_24hr, forecast_36hr) = thirtysix_hour_outlook(daily_forecasts)
     
+    today = timezone.now().date()
     return render(request, 'intellicast/weather.html', {
         'location': location,
-        'todays_date': datetime.datetime.now(),
-        'tomorrows_date': datetime.datetime.now() + datetime.timedelta(days=1),
+        'todays_date': today,
+        'tomorrows_date': today + datetime.timedelta(days=1),
         'current_conditions': conditions,
         
         'forecast_12hr': forecast_12hr,
@@ -102,10 +104,11 @@ def weather_page(request):
 def daily_weather_detail(request, year=None, month=None, day=None):
     
     forecast_date = datetime.date(year=int(year), month=int(month), day=int(day))
-    if forecast_date < datetime.date.today():
+    today = timezone.now().date()
+    if forecast_date < today:
         return render(request, 'intellicast/daily_weather_detail.html', {'unavailable': True})
     
-    difference = forecast_date - datetime.date.today()
+    difference = forecast_date - today
     day_index = str(1 + difference.days)
     
     try:
