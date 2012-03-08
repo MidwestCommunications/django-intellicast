@@ -8,7 +8,7 @@ from django.contrib.sites.models import get_current_site
 
 from loci.utils import geocode, geolocate_request
 
-from intellicast.utils import get_intellicast_data
+from intellicast.utils import get_intellicast_data, thirtysix_hour_outlook
 
 """
 Summary of Template Tags and Syntax:
@@ -19,6 +19,60 @@ get_weather_alerts as [var_name]
 """
 
 register = template.Library()
+
+class GetExtendedConditions(template.Node):
+    def __init__(self, var_name):
+        self.var_name = var_name
+        
+    def render(self, context):
+        try:
+            request = context['request']
+            zip_code = get_current_site(request).profile.zip_code
+        except (KeyError, AttributeError):
+            zip_code = settings.DEFAULT_ZIP_CODE
+        try:
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
+            (twelve_hour, twentyfour_hour, thirtysix_hour) = thirtysix_hour_outlook(daily_forecasts)
+            city_name = location['city'] + ',' + location['state']
+            recent_precip = conditions['SixHrPrecip']
+        except:
+            print "error in weather template tag."
+            if settings.DEBUG:
+                raise
+            return ''
+            
+        conditions_badge = {
+            'city_name': city_name, 
+            'zipcode': zip_code,
+            'recent_precip': recent_precip,
+            'current_temp': conditions['TempF'], 
+            'icon_code': conditions['IconCode'],
+            'feels_like': conditions['FeelsLikeF'],
+            'wind_direction': conditions['WndDirCardinal'],
+            'wind_speed': conditions['WndSpdMph'],
+            'sky': conditions['Sky'],
+            'twelve_hour': twelve_hour,
+            'twentyfour_hour': twentyfour_hour,
+            'thirtysix_hour': thirtysix_hour
+        }
+        print "header weather info:", conditions_badge
+        context[self.var_name] = conditions_badge
+        return ''
+        
+@register.tag
+def get_extended_weather_conditions(parser, token):
+    """
+    Get the weather conditions for the current site's default zipcode.
+    
+    Syntax:
+    {% get_current_conditions as [var_name] %}
+    """
+    
+    args = token.split_contents()
+    var_name = args[-1]
+    return GetExtendedConditions(var_name)
+
+
 
 class GetConditions(template.Node):
     def __init__(self, var_name):
