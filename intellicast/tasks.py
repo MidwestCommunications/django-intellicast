@@ -6,7 +6,7 @@ from django.conf import settings
 from django.core.cache import cache
 from images2gif import writeGif
 
-from urllib2 import urlopen
+from urllib2 import urlopen, HTTPError
 from xml.dom.minidom import parse
 
 
@@ -38,9 +38,12 @@ def fetch_intellicast_data(for_zip=None):
             # Cache locations for 12 hours at a time per intellicast business rules.
             cache.set('intellicast_location_' + str(zipcode), location, 60 * 60 * 12)
         
-        xml = parse(urlopen('http://services.intellicast.com/200904-01/' + 
+        try:
+            xml = parse(urlopen('http://services.intellicast.com/200904-01/' + 
                 '158765827/Weather/Report/' + location['intellicast_id']))
-            
+        except HTTPError:
+            return None
+
         conditions_dict = {}
         conditions_node = xml.getElementsByTagName('CurrentObservation')[0]
         for attr in conditions_node.attributes.keys():
