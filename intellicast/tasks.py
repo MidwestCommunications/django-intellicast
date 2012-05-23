@@ -8,13 +8,19 @@ from images2gif import writeGif
 
 from urllib2 import urlopen, HTTPError
 from xml.dom.minidom import parse
-
+from django.contrib.sites.models import Site
 
 @task(name='intellicast.fetch_intellicast_data')
 def fetch_intellicast_data(for_zip=None):
     if not for_zip:
-        zipcodes_list = ['54403','55811','54303','47802','49001','48842',
-            '49422','49017','54915','53085','55747','49036']
+        #zipcodes_list = ['54403','55811','54303','47802','49001','48842',
+        #    '49422','49017','54915','53085','55747','49036']
+
+        zipcodes_list = []
+        for s in Site.objects.all():
+            if s.profile.zip_code not in zipcodes_list and s.profile.zip_code != '':
+                zipcodes_list.append(s.profile.zip_code)
+
     else:
         zipcodes_list = [for_zip]
 
