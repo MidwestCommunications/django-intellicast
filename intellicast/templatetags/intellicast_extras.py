@@ -55,7 +55,6 @@ class GetExtendedConditions(template.Node):
             'twentyfour_hour': twentyfour_hour,
             'thirtysix_hour': thirtysix_hour
         }
-        print "header weather info:", conditions_badge
         context[self.var_name] = conditions_badge
         return ''
         
