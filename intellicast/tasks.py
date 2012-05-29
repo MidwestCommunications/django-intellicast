@@ -29,8 +29,11 @@ def fetch_intellicast_data(for_zip=None):
         if cached_location:
             location = cached_location
         else:
-            location_xml = parse(urlopen('http://services.intellicast.com/' + 
-                    '200904-01/158765827/Locations/Cities/' + zipcode))
+            try:
+                location_xml = parse(urlopen(url='http://services.intellicast.com/' + 
+                        '200904-01/158765827/Locations/Cities/' + zipcode, timeout=10))
+            except:
+                return None, None, None, None, None
                     
             location_node = location_xml.getElementsByTagName('City')[0]
             location = {
@@ -45,10 +48,10 @@ def fetch_intellicast_data(for_zip=None):
             cache.set('intellicast_location_' + str(zipcode), location, 60 * 60 * 12)
         
         try:
-            xml = parse(urlopen('http://services.intellicast.com/200904-01/' + 
-                '158765827/Weather/Report/' + location['intellicast_id']))
-        except HTTPError:
-            return None
+            xml = parse(urlopen(url='http://services.intellicast.com/200904-01/' + 
+                '158765827/Weather/Report/' + location['intellicast_id']), timeout=10)
+        except:
+            return None, None, None, None, None
 
         conditions_dict = {}
         conditions_node = xml.getElementsByTagName('CurrentObservation')[0]

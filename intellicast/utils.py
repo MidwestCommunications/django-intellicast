@@ -32,7 +32,9 @@ def thirtysix_hour_outlook(daily_forecasts):
     Returns dictionaries for a 36 hour extended forecast as seen on mwc
     weather sites.
     """
-    
+    if not daily_forecasts:
+        return None, None, None
+
     todays_forecast = daily_forecasts['1']
     if todays_forecast['IconCodeDay'] == '86':
         todays_forecast_dict = None

@@ -1,6 +1,9 @@
 import re
 import datetime
 import string
+import socket
+
+socket.setdefaulttimeout(5)
 
 from django import template
 from django.conf import settings
@@ -33,6 +36,8 @@ class GetExtendedConditions(template.Node):
         try:
             (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
             (twelve_hour, twentyfour_hour, thirtysix_hour) = thirtysix_hour_outlook(daily_forecasts)
+            if not conditions:
+                return ''
             city_name = location['city'] + ',' + location['state']
             recent_precip = conditions['SixHrPrecip']
         except:
