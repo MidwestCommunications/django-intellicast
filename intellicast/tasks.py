@@ -7,33 +7,38 @@ from django.core.cache import cache
 from images2gif import writeGif
 
 from urllib2 import urlopen, HTTPError
-from xml.dom.minidom import parse
+import requests
+from xml.dom.minidom import parse, parseString
 from django.contrib.sites.models import Site
 
 @task(name='intellicast.fetch_intellicast_data')
 def fetch_intellicast_data(for_zip=None):
+    
+    site_zip_codes=Site.objects.values_list('profile__zip_code', flat=True)
+
     if not for_zip:
-        #zipcodes_list = ['54403','55811','54303','47802','49001','48842',
-        #    '49422','49017','54915','53085','55747','49036']
-
-        zipcodes_list = []
-        for s in Site.objects.all():
-            if s.profile.zip_code not in zipcodes_list and s.profile.zip_code != '':
-                zipcodes_list.append(s.profile.zip_code)
-
+        zipcodes_list = site_zip_codes
     else:
+        # If a location which is a default site zipcode is being looked up,
+        # only look in the cache to grab it so that this lookup is never
+        # done at request time unless it's for an unusual location.
+        if for_zip in site_zip_codes:
+            cached_for_site = cache.get('intellicast_data_for_' + for_zip)
+            if cached_for_site:
+                return cached_for_site
+            else:
+                return None, None, None, None, None
         zipcodes_list = [for_zip]
 
     for zipcode in zipcodes_list:
+        if zipcode == '':
+            continue
         cached_location = cache.get('intellicast_location_' + zipcode)
         if cached_location:
             location = cached_location
-        else:
-            try:
-                location_xml = parse(urlopen(url='http://services.intellicast.com/' + 
-                        '200904-01/158765827/Locations/Cities/' + zipcode, timeout=10))
-            except:
-                return None, None, None, None, None
+        else:            
+            location_xml = parseString(requests.get('http://services.intellicast.com/' + 
+                '200904-01/158765827/Locations/Cities/' + zipcode).text)
                     
             location_node = location_xml.getElementsByTagName('City')[0]
             location = {
@@ -47,11 +52,8 @@ def fetch_intellicast_data(for_zip=None):
             # Cache locations for 12 hours at a time per intellicast business rules.
             cache.set('intellicast_location_' + str(zipcode), location, 60 * 60 * 12)
         
-        try:
-            xml = parse(urlopen(url='http://services.intellicast.com/200904-01/' + 
-                '158765827/Weather/Report/' + location['intellicast_id']), timeout=10)
-        except:
-            return None, None, None, None, None
+        xml=parseString(requests.get('http://services.intellicast.com/200904-01/' + 
+            '158765827/Weather/Report/' + location['intellicast_id']).text)
 
         conditions_dict = {}
         conditions_node = xml.getElementsByTagName('CurrentObservation')[0]
