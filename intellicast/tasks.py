@@ -12,7 +12,7 @@ from xml.dom.minidom import parse, parseString
 from django.contrib.sites.models import Site
 
 @task(name='intellicast.fetch_intellicast_data')
-def fetch_intellicast_data(for_zip=None):
+def fetch_intellicast_data(for_zip=None, long_cache=None):
     
     site_zip_codes=Site.objects.values_list('profile__zip_code', flat=True)
 
@@ -83,8 +83,13 @@ def fetch_intellicast_data(for_zip=None):
                 for attr in node.attributes.keys():
                     mini_dict[attr] = node.getAttribute(attr)
                 alerts_dict[i] = mini_dict
+        caching_duration = 60 * 6
+        #This is allowed to cache data for development
+        if long_cache:
+            caching_duration = 60 * 60 * 24
+
         cache.set('intellicast_data_for_' + str(zipcode), 
-            (location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict), 60 * 6)
+            (location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict), caching_duration)
         if for_zip:
             return location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict
 
