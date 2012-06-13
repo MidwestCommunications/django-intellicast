@@ -41,7 +41,6 @@ class GetExtendedConditions(template.Node):
             city_name = location['city'] + ',' + location['state']
             recent_precip = conditions['SixHrPrecip']
         except:
-            print "error in weather template tag."
             if settings.DEBUG:
                 raise
             return ''
