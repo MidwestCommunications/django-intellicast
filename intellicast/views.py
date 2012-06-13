@@ -43,6 +43,9 @@ def weather_page(request):
     except TypeError:
         return render(request, 'intellicast/weather.html', {'unavailable': True})
     
+    if not hourly_forecasts or not conditions or not daily_forecasts:
+        return render(request, 'intellicast/weather.html', {'unavailable': True})
+
     hourly_forecast_items = []
     for i in range(1, 24):
         forecast_dict = hourly_forecasts[str(i)]

@@ -88,6 +88,9 @@ def fetch_intellicast_data(for_zip=None, long_cache=None):
         if long_cache:
             caching_duration = 60 * 60 * 24
 
+        if not long_cache and not for_zip:
+            caching_duration = 60 * 60 * 4
+
         cache.set('intellicast_data_for_' + str(zipcode), 
             (location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict), caching_duration)
         if for_zip:
