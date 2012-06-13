@@ -90,21 +90,19 @@ class GetConditions(template.Node):
             zip_code = settings.DEFAULT_ZIP_CODE
         try:
             (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
+        
+            conditions_badge = {
+                'zipcode': zip_code, 
+                'current_temp': conditions['TempF'], 
+                'icon_code': conditions['IconCode'],
+                'feels_like': conditions['FeelsLikeF'],
+                'wind_direction': conditions['WndDirCardinal'],
+                'wind_speed': conditions['WndSpdMph'],
+                'sky': conditions['Sky'],
+            }
+            context[self.var_name] = conditions_badge
         except:
-            if settings.DEBUG:
-                raise
             return ''
-            
-        conditions_badge = {
-            'zipcode': zip_code, 
-            'current_temp': conditions['TempF'], 
-            'icon_code': conditions['IconCode'],
-            'feels_like': conditions['FeelsLikeF'],
-            'wind_direction': conditions['WndDirCardinal'],
-            'wind_speed': conditions['WndSpdMph'],
-            'sky': conditions['Sky'],
-        }
-        context[self.var_name] = conditions_badge
         return ''
         
 @register.tag
