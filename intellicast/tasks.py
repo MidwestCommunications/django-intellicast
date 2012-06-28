@@ -105,15 +105,15 @@ def update_map_images():
         "http://services.intellicast.com/200904-01/158765827/Image/Radar/Radar2009.13L/Loop/SectorName/r03"
     ))
     try:
-        local = open(settings.MEDIA_ROOT + 'intellicast/intellicast_animated_map.gif', 'wb')
+        local = open(settings.MEDIA_ROOT + '/intellicast/intellicast_animated_map.gif', 'wb')
     except IOError:
-        os.mkdir(settings.MEDIA_ROOT + 'intellicast/')
-        local = open(settings.MEDIA_ROOT + 'intellicast/intellicast_animated_map.gif', 'wb')    
+        os.mkdir(settings.MEDIA_ROOT + '/intellicast/')
+        local = open(settings.MEDIA_ROOT + '/intellicast/intellicast_animated_map.gif', 'wb')    
     local.write(f.read())
     local.close()
     
     #Load up the fetched file from the disk
-    original_file = Image.open(settings.MEDIA_ROOT + 'intellicast/intellicast_animated_map.gif')
+    original_file = Image.open(settings.MEDIA_ROOT + '/intellicast/intellicast_animated_map.gif')
     original_file.load()
     
     #Set up zipcodes with a list for their image frames
@@ -158,7 +158,7 @@ def update_map_images():
     #Write the new sets of frames to GIF files on the disk.
     for (zip_code, frame_list) in frames_dict.items():
         writeGif(
-            filename=settings.MEDIA_ROOT + 'intellicast/intellicast_animated_' + zip_code + '.gif',
+            filename=settings.MEDIA_ROOT + '/intellicast/intellicast_animated_' + zip_code + '.gif',
             images=frame_list, 
             duration=0.5,
             subRectangles=False

@@ -83,7 +83,7 @@ def thirtysix_hour_outlook(daily_forecasts):
             'precip_chance': tomorrows_forecast['PrecipChanceNight'],
             'wind_speed': tomorrows_forecast['WndSpdMph'],
             'wind_direction': tomorrows_forecast['WndDirCardinal'],
-            'sky': tomorrows_forecast['SkyTextDay'],
+            'sky': tomorrows_forecast['SkyTextNight'],
             'icon_code': tomorrows_forecast['IconCodeDay']
         }
     
