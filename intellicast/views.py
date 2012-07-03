@@ -11,7 +11,8 @@ from loci.utils import geolocate_request, geocode
 from loci.forms import GeolocationForm
 
 from intellicast.utils import parse_intellicast_date, parse_intellicast_time
-from intellicast.utils import get_intellicast_data, thirtysix_hour_outlook
+from intellicast.utils import thirtysix_hour_outlook
+from intellicast.tasks import fetch_intellicast_data
 
 
 def _get_request_location(request):
@@ -39,7 +40,7 @@ def weather_page(request):
     try:
         rloc = _get_request_location(request)
         geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
-        (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
+        (location, conditions, hourly_forecasts, daily_forecasts, alerts) = fetch_intellicast_data(rloc.zip_code)
     except TypeError:
         return render(request, 'intellicast/weather.html', {'unavailable': True})
     

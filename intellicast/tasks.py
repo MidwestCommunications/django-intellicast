@@ -10,93 +10,42 @@ from urllib2 import urlopen, HTTPError
 import requests
 from xml.dom.minidom import parse, parseString
 from django.contrib.sites.models import Site
+from django.core.exceptions import FieldError
+
+from intellicast.utils import get_intellicast_data
 
 @task(name='intellicast.fetch_intellicast_data')
-def fetch_intellicast_data(for_zip=None, long_cache=None):
-    
-    site_zip_codes=Site.objects.values_list('profile__zip_code', flat=True)
-
-    if not for_zip:
-        zipcodes_list = site_zip_codes
+def fetch_intellicast_data(zipcode):
+    for_zip = zipcode
+    cname = 'intellicast_data_for_' + str(zipcode)
+    cached_data = cache.get(cname)
+    if cached_data:
+        return cached_data
     else:
-        # If a location which is a default site zipcode is being looked up,
-        # only look in the cache to grab it so that this lookup is never
-        # done at request time unless it's for an unusual location.
-        if for_zip in site_zip_codes:
-            cached_for_site = cache.get('intellicast_data_for_' + for_zip)
-            if cached_for_site:
-                return cached_for_site
-            else:
-                return None, None, None, None, None
-        zipcodes_list = [for_zip]
+        try:
+            site_zip_codes = Site.objects.values_list('profile__zip_code', flat=True)
+        except FieldError:
+            site_zip_codes = settings.INTELLICAST_PREFETCH_ZIPS
+            print site_zip_codes
 
-    for zipcode in zipcodes_list:
-        if zipcode == '':
-            continue
-        cached_location = cache.get('intellicast_location_' + zipcode)
-        if cached_location:
-            location = cached_location
-        else:            
-            location_xml = parseString(requests.get('http://services.intellicast.com/' + 
-                '200904-01/158765827/Locations/Cities/' + zipcode).text)
-                    
-            location_node = location_xml.getElementsByTagName('City')[0]
-            location = {
-                'intellicast_id': location_node.getAttribute('Id'),
-                'city': location_node.getAttribute('Name'),
-                'state': location_node.getAttribute('StateAbbr'),
-                'zipcode': zipcode,
-                'latitude': location_node.getAttribute('Latitude'),
-                'longitude': location_node.getAttribute('Longitude'),
-            }
-            # Cache locations for 12 hours at a time per intellicast business rules.
-            cache.set('intellicast_location_' + str(zipcode), location, 60 * 60 * 12)
-        
-        xml=parseString(requests.get('http://services.intellicast.com/200904-01/' + 
-            '158765827/Weather/Report/' + location['intellicast_id']).text)
+        if not for_zip:
+            zipcodes_list = site_zip_codes
+        else:
+            # If a location which is a default site zipcode is being looked up,
+            # only look in the cache to grab it so that this lookup is never
+            # done at request time unless it's for an unusual location.
+            if for_zip in site_zip_codes:
+                cached_for_site = cache.get('intellicast_data_for_' + for_zip)
+                if cached_for_site:
+                    return cached_for_site
+                else:
+                    return None, None, None, None, None
+            zipcodes_list = [for_zip]
 
-        conditions_dict = {}
-        conditions_node = xml.getElementsByTagName('CurrentObservation')[0]
-        for attr in conditions_node.attributes.keys():
-            conditions_dict[attr] = conditions_node.getAttribute(attr)
-                
-        hourly_forecast_dict = {}
-        for node in xml.getElementsByTagName('Hour'):
-            mini_dict = {}
-            for attr in node.attributes.keys():
-                mini_dict[attr] = node.getAttribute(attr)
-            hourly_forecast_dict[mini_dict['HourNum']] = mini_dict
-        
-        daily_forecast_dict = {}
-        daily_forecast_node = xml.getElementsByTagName('DailyForecast')[0]
-        for node in daily_forecast_node.getElementsByTagName('Day'):
-            mini_dict = {}
-            for attr in node.attributes.keys():
-                mini_dict[attr] =  node.getAttribute(attr)
-            daily_forecast_dict[mini_dict['DayNum']] = mini_dict
-        
-        alerts_dict = {}
-        alert_elements = xml.getElementsByTagName('Alert')
-        if alert_elements:
-            for i, node in enumerate(alert_elements, 1):
-                mini_dict = {}
-                for attr in node.attributes.keys():
-                    mini_dict[attr] = node.getAttribute(attr)
-                alerts_dict[i] = mini_dict
-        caching_duration = 60 * 6
-        #This is allowed to cache data for development
-        if long_cache:
-            caching_duration = 60 * 60 * 24
-
-        if not long_cache and not for_zip:
-            caching_duration = 60 * 60 * 4
-
-        cache.set('intellicast_data_for_' + str(zipcode), 
-            (location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict), caching_duration)
-        if for_zip:
-            return location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict
-
-
+        for zipcode in zipcodes_list:
+            if zipcode == '':
+                continue
+            return get_intellicast_data(zipcode)
 
 @task(name='intellicast.update_map_images')
 def update_map_images():

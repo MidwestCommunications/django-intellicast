@@ -124,7 +124,8 @@ class GetAlerts(template.Node):
     def render(self, context):
         try:
             request = context['request']
-            zip_code = get_current_site(request).profile.zip_code
+            #zip_code = get_current_site(request).profile.zip_code
+            zip_code = 54401
         except (KeyError, AttributeError):
             zip_code = settings.DEFAULT_ZIP_CODE
         else:
@@ -135,8 +136,8 @@ class GetAlerts(template.Node):
         except TypeError:
             return ''
         except:
-            if settings.DEBUG:
-                raise
+            #if settings.DEBUG:
+            #    raise
             return ''
         try:
             alert_items = []
