@@ -170,6 +170,7 @@ INSTALLED_APPS = (
     'django.contrib.admin',
     'djcelery',
     'djkombu',
+    'loci'
 )
 
 # Location Configuration

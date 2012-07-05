@@ -36,13 +36,9 @@ def weather_page(request):
     Main weather landing page.  Features current conditions, a 36 hour forecast,
     and an interactive map (sadly, map is flash.)
     """
-    
-    try:
-        rloc = _get_request_location(request)
-        geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
-        (location, conditions, hourly_forecasts, daily_forecasts, alerts) = fetch_intellicast_data(rloc.zip_code)
-    except TypeError:
-        return render(request, 'intellicast/weather.html', {'unavailable': True})
+    rloc = _get_request_location(request)
+    geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
+    (location, conditions, hourly_forecasts, daily_forecasts, alerts) = fetch_intellicast_data(rloc.zip_code)
     
     if not hourly_forecasts or not conditions or not daily_forecasts:
         return render(request, 'intellicast/weather.html', {'unavailable': True})

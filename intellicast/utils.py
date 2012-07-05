@@ -9,6 +9,7 @@ from django.conf import settings
 from django.contrib.sites.models import Site
 from PIL import Image
 
+
 def get_intellicast_data(for_zip=None, long_cache=None):
     """
     Returns a set of intellicast data for the specified zipcode. In practice,
@@ -133,8 +134,18 @@ def thirtysix_hour_outlook(daily_forecasts):
     if todays_forecast_dict:
         tomorrow_nights_forecast_dict = None
     else:
+        weekdays_dict = {
+            1: 'Sun',
+            2: 'Mon',
+            3: 'Tues',
+            4: 'Wed',
+            5: 'Thurs',
+            6: 'Fri',
+            7: 'Sat'
+        }
+
         tomorrow_nights_forecast_dict = {
-            'shortname': 'Tomorrow Night',
+            'shortname': datetime.datetime.today().day + ' Night',
             'temp': tomorrows_forecast['LoTempF'],
             'temp_type': 'Low',
             'precip_chance': tomorrows_forecast['PrecipChanceNight'],
