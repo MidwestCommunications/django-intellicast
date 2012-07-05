@@ -145,7 +145,7 @@ def thirtysix_hour_outlook(daily_forecasts):
         }
 
         tomorrow_nights_forecast_dict = {
-            'shortname': datetime.datetime.today().day + ' Night',
+            'shortname': weekdays_dict[datetime.datetime.today().day] + ' Night',
             'temp': tomorrows_forecast['LoTempF'],
             'temp_type': 'Low',
             'precip_chance': tomorrows_forecast['PrecipChanceNight'],
