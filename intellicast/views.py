@@ -1,6 +1,7 @@
 # Create your views here.
 import datetime
 import time
+import string
 
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render
@@ -12,7 +13,7 @@ from loci.forms import GeolocationForm
 
 from intellicast.utils import parse_intellicast_date, parse_intellicast_time
 from intellicast.utils import thirtysix_hour_outlook
-from intellicast.tasks import fetch_intellicast_data
+from intellicast.tasks import prefetch_intellicast_data
 
 
 def _get_request_location(request):
@@ -38,8 +39,8 @@ def weather_page(request):
     """
     rloc = _get_request_location(request)
     geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
-    (location, conditions, hourly_forecasts, daily_forecasts, alerts) = fetch_intellicast_data(rloc.zip_code)
-    
+    (location, conditions, hourly_forecasts, daily_forecasts, alerts) = prefetch_intellicast_data(rloc.zip_code)
+
     if not hourly_forecasts or not conditions or not daily_forecasts:
         return render(request, 'intellicast/weather.html', {'unavailable': True})
 
@@ -81,6 +82,20 @@ def weather_page(request):
             'wind_direction': forecast_dict['WndDirCardinal'],
         }
         daily_forecast_items.append(forecast_clean)
+    try:
+        alert_items = []
+        for i, item in enumerate(alerts, 1):
+            alerts_dict = alerts[i]
+            alert_item = {
+                'headline': alerts_dict['Headline'],
+                'starttime': alerts_dict['StartTime'],
+                'endtime': alerts_dict['EndTime'],
+                'urgency': alerts_dict['Urgency'],
+                'bulletin': string.lower(alerts_dict['Bulletin']),
+            }
+            alert_items.append(alert_item)
+    except:
+        pass
     
     (forecast_12hr, forecast_24hr, forecast_36hr) = thirtysix_hour_outlook(daily_forecasts)
     
@@ -97,6 +112,7 @@ def weather_page(request):
 
         'daily_forecasts': daily_forecast_items,
         'hourly_forecasts': hourly_forecast_items,
+        'alerts': alert_items,
         'unavailable': False,
         'geo_form': geo_form,
     })

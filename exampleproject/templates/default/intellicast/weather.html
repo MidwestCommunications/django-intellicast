@@ -15,10 +15,20 @@
     <input type="submit"/>
 </form>
 
+{% if alerts %}
+<h2>Current Weather Alerts</h2>
+<ul>
+    {% for alert in alerts %}
+    <li>{{ alert.headline }}</li>
+    <li>{{ alert.starttime }} - {{ alert.endtime }}</li>
+    <li>{{ alert.bulletin }}</li>
+    <br/>
+    {% endfor %}
+</ul>
+{% endif %}
+
 <h2>Current Conditions</h2>
-
-<img src="{{MEDIA_URL}}intellicast_icons/wx_{{current_conditionsIconCode}}.png">
-
+<img src="{{MEDIA_URL}}intellicast_icons/wx_{{current_conditions.IconCode}}.png">
 <ul>
     <li>Temperature - {{ current_conditions.TempF }} F</li>
     <li>Dewpoint - {{ current_conditions.DewPtF }} F</li>
@@ -26,6 +36,33 @@
     <li>Wind - {{ current_conditions.WndDirCardinal }} {{ current_conditions.WndSpdMph }} mph with gusts up to {{ current_conditions.WndGustMph }}</li>
     <li>Visibility - {{ current_conditions.Visibility }} miles</li>
     <li>Sky - {{ current_conditions.Sky }}</li>
+</ul>
+
+<h2>{{ forecast_12hr.shortname }}</h2>
+<img src="{{MEDIA_URL}}intellicast_icons/wx_{{forecast_12hr.icon_code}}.png">
+<ul>
+    <li>Temperature - {{ forecast_12hr.temp }} F <span>{{ forecast_12hr.temp_type }}</span></li>
+    <li>Chance of Precip - {{ forecast_12hr.precip_chance }}</li>
+    <li>Wind - {{ forecast_12hr.wind_direction }} {{ forecast_12hr.wind_speed }}</li>
+    <li>Sky - {{ forecast_12hr.sky }}</li>
+</ul>
+
+<h2>{{ forecast_24hr.shortname }}</h2>
+<img src="{{MEDIA_URL}}intellicast_icons/wx_{{forecast_24hr.icon_code}}.png">
+<ul>
+    <li>Temperature - {{ forecast_24hr.temp }} F <span>{{ forecast_24hr.temp_type }}</span></li>
+    <li>Chance of Precip - {{ forecast_24hr.precip_chance }}</li>
+    <li>Wind - {{ forecast_24hr.wind_direction }} {{ forecast_24hr.wind_speed }}</li>
+    <li>Sky - {{ forecast_24hr.sky }}</li>
+</ul>
+
+<h2>{{ forecast_36hr.shortname }}</h2>
+<img src="{{MEDIA_URL}}intellicast_icons/wx_{{forecast_36hr.icon_code}}.png">
+<ul>
+    <li>Temperature - {{ forecast_36hr.temp }} F <span>{{ forecast_36hr.temp_type }}</span></li>
+    <li>Chance of Precip - {{ forecast_36hr.precip_chance }}</li>
+    <li>Wind - {{ forecast_36hr.wind_direction }} {{ forecast_36hr.wind_speed }}</li>
+    <li>Sky - {{ forecast_36hr.sky }}</li>
 </ul>
 
 <h2>Hourly Forecast</h2>

@@ -11,7 +11,8 @@ from django.contrib.sites.models import get_current_site
 
 from loci.utils import geocode, geolocate_request
 
-from intellicast.utils import get_intellicast_data, thirtysix_hour_outlook
+from intellicast.utils import thirtysix_hour_outlook
+from intellicast.tasks import prefetch_intellicast_data
 
 """
 Summary of Template Tags and Syntax:
@@ -34,7 +35,7 @@ class GetExtendedConditions(template.Node):
         except (KeyError, AttributeError):
             zip_code = settings.DEFAULT_ZIP_CODE
         try:
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = prefetch_intellicast_data(zip_code)
             (twelve_hour, twentyfour_hour, thirtysix_hour) = thirtysix_hour_outlook(daily_forecasts)
             if not conditions:
                 return ''
@@ -88,7 +89,7 @@ class GetConditions(template.Node):
         except (KeyError, AttributeError):
             zip_code = settings.DEFAULT_ZIP_CODE
         try:
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = prefetch_intellicast_data(zip_code)
         
             conditions_badge = {
                 'zipcode': zip_code, 
@@ -124,15 +125,14 @@ class GetAlerts(template.Node):
     def render(self, context):
         try:
             request = context['request']
-            #zip_code = get_current_site(request).profile.zip_code
-            zip_code = 54401
+            zip_code = get_current_site(request).profile.zip_code
         except (KeyError, AttributeError):
             zip_code = settings.DEFAULT_ZIP_CODE
         else:
             if not zip_code:
                 zip_code = settings.DEFAULT_ZIP_CODE
         try:
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = prefetch_intellicast_data(zip_code)
         except TypeError:
             return ''
         except:
@@ -151,7 +151,6 @@ class GetAlerts(template.Node):
                     'bulletin': string.lower(alerts_dict['Bulletin']),
                 }
                 alert_items.append(alert_item)
-            
             context[self.var_name] = alert_items
         except:
             pass
@@ -164,7 +163,7 @@ def get_weather_alerts(parser, token):
     Get the weather alerts, if there are any, for the current site's default zipcode.
     
     Syntax:
-    {% get_weather_conditions as [var_name] %}
+    {% get_weather_alerts as [var_name] %}
     """
     
     args = token.split_contents()

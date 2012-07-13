@@ -15,8 +15,11 @@ from django.core.exceptions import FieldError
 from intellicast.utils import get_intellicast_data
 
 @task(name='intellicast.fetch_intellicast_data')
-def fetch_intellicast_data(zipcode):
-    for_zip = zipcode
+def prefetch_intellicast_data(zipcode):
+    #Make sure we aren't accepting non-US zip codes
+    if ' ' in zipcode or len(zipcode) < 5:
+        return None, None, None, None, None
+
     cname = 'intellicast_data_for_' + str(zipcode)
     cached_data = cache.get(cname)
     if cached_data:
@@ -26,21 +29,20 @@ def fetch_intellicast_data(zipcode):
             site_zip_codes = Site.objects.values_list('profile__zip_code', flat=True)
         except FieldError:
             site_zip_codes = settings.INTELLICAST_PREFETCH_ZIPS
-            print site_zip_codes
 
-        if not for_zip:
+        if not zipcode:
             zipcodes_list = site_zip_codes
         else:
             # If a location which is a default site zipcode is being looked up,
             # only look in the cache to grab it so that this lookup is never
             # done at request time unless it's for an unusual location.
-            if for_zip in site_zip_codes:
-                cached_for_site = cache.get('intellicast_data_for_' + for_zip)
+            if zipcode in site_zip_codes:
+                cached_for_site = cache.get('intellicast_data_for_' + zipcode)
                 if cached_for_site:
                     return cached_for_site
                 else:
                     return None, None, None, None, None
-            zipcodes_list = [for_zip]
+            zipcodes_list = [zipcode]
 
         for zipcode in zipcodes_list:
             if zipcode == '':
