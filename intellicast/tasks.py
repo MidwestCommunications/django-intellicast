@@ -41,7 +41,7 @@ def prefetch_intellicast_data(zipcode):
                 if cached_for_site:
                     return cached_for_site
                 else:
-                    return None, None, None, None, None
+                    return get_intellicast_data(zipcode)
             zipcodes_list = [zipcode]
 
         for zipcode in zipcodes_list:
