@@ -1,70 +1,50 @@
 import os
-import urllib2
+from datetime import timedelta
 from PIL import Image
 from celery.decorators import task
 from django.conf import settings
 from django.core.cache import cache
 from images2gif import writeGif
+from tempfile import mkstemp
 
-from urllib2 import urlopen, HTTPError
 import requests
+from StringIO import StringIO
 from xml.dom.minidom import parse, parseString
 from django.contrib.sites.models import Site
 from django.core.exceptions import FieldError
+from django.utils import timezone
 
 from intellicast.utils import get_intellicast_data
 
 @task(name='intellicast.fetch_intellicast_data')
-def prefetch_intellicast_data(zipcode):
-    #Make sure we aren't accepting non-US zip codes
-    if ' ' in zipcode or len(zipcode) < 5:
-        return None, None, None, None, None
+def prefetch_intellicast_data():
+    try:
+        site_zip_codes = Site.objects.values_list('profile__zip_code', flat=True)
+    except FieldError:
+        site_zip_codes = settings.INTELLICAST_PREFETCH_ZIPS
 
-    cname = 'intellicast_data_for_' + str(zipcode)
-    cached_data = cache.get(cname)
-    if cached_data:
-        return cached_data
+    now = timezone.now()
+    for zipcode in site_zip_codes:
+        if zipcode == '':
+            continue
+        intellicast_data = get_intellicast_data(zipcode, False, True)
+        if not all(intellicast_data):
+            last_success_time = cache.get('intellicast_fetch_success')
+            if not last_success_time or now - last_success_time > timedelta(hours=1):
+                cache.set('intellicast_fetch_success', now, 60 * 60 * 2)
+                raise Exception('Intellicast seems to be down.')
+            break
     else:
-        try:
-            site_zip_codes = Site.objects.values_list('profile__zip_code', flat=True)
-        except FieldError:
-            site_zip_codes = settings.INTELLICAST_PREFETCH_ZIPS
+        cache.set('intellicast_fetch_success', now, 60 * 60 * 2)
 
-        if not zipcode:
-            zipcodes_list = site_zip_codes
-        else:
-            # If a location which is a default site zipcode is being looked up,
-            # only look in the cache to grab it so that this lookup is never
-            # done at request time unless it's for an unusual location.
-            if zipcode in site_zip_codes:
-                cached_for_site = cache.get('intellicast_data_for_' + zipcode)
-                if cached_for_site:
-                    return cached_for_site
-                else:
-                    return get_intellicast_data(zipcode)
-            zipcodes_list = [zipcode]
-
-        for zipcode in zipcodes_list:
-            if zipcode == '':
-                continue
-            return get_intellicast_data(zipcode)
 
 @task(name='intellicast.update_map_images')
 def update_map_images():
     #Fetch a radar image of the Midwest from Intellicast and save it to disk.
-    f = urllib2.urlopen(urllib2.Request(
-        "http://services.intellicast.com/200904-01/158765827/Image/Radar/Radar2009.13L/Loop/SectorName/r03"
-    ))
-    try:
-        local = open(settings.MEDIA_ROOT + '/intellicast/intellicast_animated_map.gif', 'wb')
-    except IOError:
-        os.mkdir(settings.MEDIA_ROOT + '/intellicast/')
-        local = open(settings.MEDIA_ROOT + '/intellicast/intellicast_animated_map.gif', 'wb')    
-    local.write(f.read())
-    local.close()
+    r = requests.get('http://services.intellicast.com/200904-01/158765827/Image/Radar/Radar2009.13L/Loop/SectorName/r03')
     
     #Load up the fetched file from the disk
-    original_file = Image.open(settings.MEDIA_ROOT + '/intellicast/intellicast_animated_map.gif')
+    original_file = Image.open(StringIO(r.content))
     original_file.load()
     
     #Set up zipcodes with a list for their image frames

@@ -13,7 +13,7 @@ from loci.forms import GeolocationForm
 
 from intellicast.utils import parse_intellicast_date, parse_intellicast_time
 from intellicast.utils import thirtysix_hour_outlook
-from intellicast.tasks import prefetch_intellicast_data
+from intellicast.utils import get_intellicast_data
 
 
 def _get_request_location(request):
@@ -39,7 +39,7 @@ def weather_page(request):
     """
     rloc = _get_request_location(request)
     geo_form = GeolocationForm(initial={'geo': rloc.zip_code})
-    (location, conditions, hourly_forecasts, daily_forecasts, alerts) = prefetch_intellicast_data(rloc.zip_code)
+    (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(rloc.zip_code)
 
     if not hourly_forecasts or not conditions or not daily_forecasts:
         return render(request, 'intellicast/weather.html', {'unavailable': True})

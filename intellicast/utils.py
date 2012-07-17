@@ -13,13 +13,10 @@ from requests.exceptions import ConnectionError, HTTPError
 def _request_data(request_url):
     try:
         location_xml = parseString(requests.get(request_url).text)
-    except (ConnectionError, HTTPError, AttributeError):
-        return None, None, None, None, None
-    try:
         location_node = location_xml.getElementsByTagName('City')[0]
-        return location_node
-    except IndexError, AttributeError:
-        return None, None, None, None, None
+    except (IndexError, ConnectionError, HTTPError, AttributeError):
+        return None
+    return location_node
 
 def _create_forecast_dict(context, forecast_data):
     forecast_dict_day = {
@@ -46,31 +43,41 @@ def _create_forecast_dict(context, forecast_data):
 
     return (forecast_dict_day, forecast_dict_night)
 
-def get_intellicast_data(zipcode, long_cache=False):
+def get_intellicast_data(zipcode, long_cache=False, force=False):
     """
     Returns a set of intellicast data for the specified zipcode. In practice,
     this data should always be cached for our station's default zipcodes.
     """
+    zipcode = str(zipcode)
+    #Make sure we aren't accepting non-US zip codes
+    if ' ' in zipcode or len(zipcode) < 5:
+        return (None, None, None, None, None)
+
     cached_location = cache.get('intellicast_location_' + zipcode)
+
     if cached_location:
         location = cached_location
     else:
         location_node = _request_data('http://services.intellicast.com/' + 
             '200904-01/158765827/Locations/Cities/' + zipcode)
+        if not location_node:
+            return (None, None, None, None, None)
 
-        try:
-            location = {
-                'intellicast_id': location_node.getAttribute('Id'),
-                'city': location_node.getAttribute('Name'),
-                'state': location_node.getAttribute('StateAbbr'),
-                'zipcode': zipcode,
-                'latitude': location_node.getAttribute('Latitude'),
-                'longitude': location_node.getAttribute('Longitude'),
-            }
-        except AttributeError:
-            return None, None, None, None, None
+        location = {
+            'intellicast_id': location_node.getAttribute('Id'),
+            'city': location_node.getAttribute('Name'),
+            'state': location_node.getAttribute('StateAbbr'),
+            'zipcode': zipcode,
+            'latitude': location_node.getAttribute('Latitude'),
+            'longitude': location_node.getAttribute('Longitude'),
+        }
         # Cache locations for 12 hours at a time per intellicast business rules.
-        cache.set('intellicast_location_' + str(zipcode), location, 60 * 60 * 12)
+        cache.set('intellicast_location_' + zipcode, location, 60 * 60 * 12)
+
+    if not force:
+        cached_intellicast_data = cache.get('intellicast_data_for_' + zipcode)
+        if cached_intellicast_data:
+            return cached_intellicast_data
 
     xml_data=_request_data('http://services.intellicast.com/200904-01/' + 
         '158765827/Weather/Report/' + location['intellicast_id'])
@@ -106,14 +113,16 @@ def get_intellicast_data(zipcode, long_cache=False):
 
     #This is allowed to cache data for development
     if long_cache:
-        caching_duration = 60 * 60 * 24
+        caching_duration = 60 * 60 * 24 #24 hours
     else:
-        caching_duration = 60 * 60 * 4
+        caching_duration = 60 * 60 * 4  #4 hours
 
-    cache.set('intellicast_data_for_' + str(zipcode), 
-        (location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict), caching_duration)
-    if zipcode:
-        return location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict
+    intellicast_data = (location, conditions_dict, hourly_forecast_dict, daily_forecast_dict, alerts_dict)
+
+    cache.set('intellicast_data_for_' + zipcode,
+        (intellicast_data), caching_duration)
+    
+    return intellicast_data
 
 def parse_intellicast_date(date_as_string):
     return datetime.datetime.strptime(date_as_string, '%m/%d/%Y %I:%M:%S %p')
