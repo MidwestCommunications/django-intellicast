@@ -49,37 +49,16 @@ def update_map_images():
     
     #Set up zipcodes with a list for their image frames
     frame = 0
-    frames_dict = {
-        '54403': [], '55811': [], '54303': [], '47802': [], 
-        '49001': [], '48842': [], '49422': [], '49017': [],
-        '54915': [], '53085': [], '55747': [], '49036': [], 
-        'wisconsin': [], 'michigan_lower': [], 'michigan_upper': [],
-        'minnesota': [], 'terre_haute': []
-    }
-    
+    frames_dict = {}
     #Loop through the frames of the original images, cropping out frames for each region
     while True:
         try:
             original_file.seek(frame)
-            
-            frames_dict['54403'].append(original_file.copy().crop((160,147,290,207)).resize((130,60)))
-            frames_dict['55811'].append(original_file.copy().crop((125,91,255,151)).resize((130,60)))
-            frames_dict['54303'].append(original_file.copy().crop((218,161,348,221)).resize((130,60)))
-            frames_dict['47802'].append(original_file.copy().crop((225,313,355,373)).resize((130,60)))
-            frames_dict['49001'].append(original_file.copy().crop((275,221,405,281)).resize((130,60)))
-            frames_dict['48842'].append(original_file.copy().crop((297,203,427,263)).resize((130,60)))
-            frames_dict['49422'].append(original_file.copy().crop((260,206,390,266)).resize((130,60)))
-            frames_dict['49017'].append(original_file.copy().crop((284,224,414,284)).resize((130,60)))
-            frames_dict['54915'].append(original_file.copy().crop((200,168,330,228)).resize((130,60)))
-            frames_dict['53085'].append(original_file.copy().crop((218,188,348,248)).resize((130,60)))
-            frames_dict['55747'].append(original_file.copy().crop((98,66,228,126)).resize((130,60)))
-            frames_dict['49036'].append(original_file.copy().crop((284,240,414,300)).resize((130,60)))
-            
-            frames_dict['wisconsin'].append(original_file.copy().crop(( 163,105,323,265 )).resize((160, 160)))
-            frames_dict['michigan_lower'].append(original_file.copy().crop(( 279,135,439,295 )).resize((160, 160)))
-            frames_dict['michigan_upper'].append(original_file.copy().crop(( 215,61,375,221 )).resize((160, 160)))
-            frames_dict['minnesota'].append(original_file.copy().crop(( 52,37,262,247 )).resize((160, 160)))
-            frames_dict['terre_haute'].append(original_file.copy().crop(( 208,212,368,372 )).resize((160, 160)))
+
+            for size, key_dict in settings.INTELLICAST_CROP_DICT.items():
+                for key, crop in key_dict.items():
+                    frame_list = frames_dict.setdefault(key, [])
+                    frame_list.append(original_file.copy().crop(crop).resize(size))
 
             frame = frame + 1
         except EOFError:
