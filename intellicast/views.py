@@ -13,7 +13,7 @@ from loci.forms import GeolocationForm
 
 from intellicast.utils import parse_intellicast_date, parse_intellicast_time
 from intellicast.utils import thirtysix_hour_outlook
-from intellicast.utils import get_intellicast_data
+from intellicast.utils import get_intellicast_data, create_forecast_dict
 
 
 def _get_request_location(request):
@@ -47,40 +47,13 @@ def weather_page(request):
     hourly_forecast_items = []
     for i in range(1, 24):
         forecast_dict = hourly_forecasts[str(i)]
-        if parse_intellicast_date(forecast_dict['ValidDateLocal']).hour == 23:
-            last_of_day = True
-        else:
-            last_of_day = False
-        forecast_clean = {
-            'time_string':forecast_dict['ValidDateLocal'],
-            'datetime':parse_intellicast_date(forecast_dict['ValidDateLocal']),
-            'temp':forecast_dict['HeatIdxF'],
-            'icon_code':forecast_dict['IconCode'],
-            'sky':forecast_dict['SkyMedium'],
-            'precip_chance':forecast_dict['PrecipChance'],
-            'humidity':forecast_dict['RelHumidity'],
-            'wind_speed': forecast_dict['WndSpdMph'],
-            'wind_direction': forecast_dict['WndDirCardinal'],
-            'lastofday': last_of_day
-        }
+        forecast_clean = create_forecast_dict('Hourly', forecast_dict)
         hourly_forecast_items.append(forecast_clean)
     
     daily_forecast_items = []
     for i in range(2, 9):
         forecast_dict = daily_forecasts[str(i)]
-        forecast_clean = {
-            'weekday':forecast_dict['DayOfWk'],
-            'time_string':forecast_dict['ValidDateLocal'],
-            'datetime':parse_intellicast_date(forecast_dict['ValidDateLocal']),
-            'high_temp':forecast_dict['HiTempF'],
-            'low_temp':forecast_dict['LoTempF'],
-            'phrase':forecast_dict['ShortPhrase'],
-            'icon_code':forecast_dict['IconCode'],
-            'precip_chance':forecast_dict['PrecipChance'],
-            'humidity':forecast_dict['RelHumidity'],
-            'wind_speed': forecast_dict['WndSpdMph'],
-            'wind_direction': forecast_dict['WndDirCardinal'],
-        }
+        forecast_clean = forecast_clean = create_forecast_dict('Hourly', forecast_dict)
         daily_forecast_items.append(forecast_clean)
     try:
         alert_items = []
@@ -149,32 +122,8 @@ def daily_weather_detail(request, year=None, month=None, day=None):
     except KeyError:
         return render(request, 'intellicast/daily_weather_detail.html', {'unavailable': True})
 
-    day_forecast_dict = {
-        'high_temp': forecast['HiTempF'],
-        'precip_chance': forecast['PrecipChanceDay'],
-        'wind_speed': forecast['WndSpdMph'],
-        'wind_direction': forecast['WndDirCardinal'],
-        'sky': forecast['SkyTextDay'],
-        'icon_code': forecast['IconCodeDay'],
-        'humidity': forecast['RelHumidity'],
-        'sunrise': parse_intellicast_time(forecast['Sunrise']),
-        'uv_index': forecast['UvIdx'],
-        'uv_description': forecast['UvDescr'],
-        'date_string': forecast['ValidDateLocal'],
-        'datetime': parse_intellicast_date(forecast['ValidDateLocal'])
-    }
-    night_forecast_dict = {
-        'low_temp': forecast['LoTempF'],
-        'precip_chance': forecast['PrecipChanceNight'],
-        'wind_speed': forecast['WndSpdMphNight'],
-        'wind_direction': forecast['WndDirCardinalNight'],
-        'sky': forecast['SkyTextNight'],
-        'icon_code': forecast['IconCodeNight'],
-        'humidity': forecast['RelHumidityNight'],
-        'sunset': parse_intellicast_time(forecast['Sunset']),
-        'moon_phase': forecast['MoonPhaseText'],
-        'datetime': parse_intellicast_date(forecast['ValidDateLocal'])
-    }
+    day_forecast_dict = create_forecast_dict('Day', forecast)[0]
+    night_forecast_dict = create_forecast_dict('Night', forecast)[1]
     
     return render(request, 'intellicast/daily_weather_detail.html', {
         'location': location,

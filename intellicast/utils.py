@@ -10,6 +10,47 @@ from django.contrib.sites.models import Site
 from PIL import Image
 from requests.exceptions import ConnectionError, HTTPError
 
+DATA_MAPPING = {
+    'HiTempF': 'temp',
+    'LoTempF': 'temp',
+    'TempF': 'temp',
+    'PrecipChanceDay': 'precip_chance',
+    'PrecipChanceNight': 'precip_chance',
+    'PrecipChance': 'precip_chance',
+    'WndSpdMph': 'wind_speed',
+    'WndSpdMphNight': 'wind_speed',
+    'WndDirCardinal': 'wind_direction',
+    'WndDirCardinalNight': 'wind_direction',
+    'SkyTextDay': 'sky',
+    'SkyTextNight': 'sky',
+    'SkyMedium': 'sky',
+    'IconCode': 'icon_code',
+    'IconCodeDay': 'icon_code',
+    'IconCodeNight': 'icon_code',
+    'RelHumidity': 'humidity',
+    'RelHumidityNight': 'humidity',
+    'Sunrise': 'sunrise',
+    'UvIdx': 'uv_index',
+    'UvDescr': 'uv_description',
+    'ValidDateLocal': 'time_string',
+    'Sunset': 'sunset',
+    'MoonPhaseText': 'moon_phase',
+    'HeatIdxF': 'temp',
+    'ShortPhrase': 'phrase',
+    'DayOfWk': 'weekday'
+}
+
+def process_intellicast_data(forecast_data):
+    processed_data = {}
+    for (intellicast_key, local_key) in DATA_MAPPING.items():
+        try:
+            data_item = forecast_data[intellicast_key]
+        except KeyError:
+            continue
+        if data_item:
+            processed_data[local_key] = data_item
+    return processed_data
+
 def _request_data(request_url):
     try:
         location_xml = parseString(requests.get(request_url).text)
@@ -18,30 +59,14 @@ def _request_data(request_url):
         return None
     return location_node
 
-def _create_forecast_dict(context, forecast_data):
-    forecast_dict_day = {
-        'shortname': context,
-        'temp': forecast_data['HiTempF'],
-        'temp_type': 'High',
-        'precip_chance': forecast_data['PrecipChanceDay'],
-        'wind_speed': forecast_data['WndSpdMph'],
-        'wind_direction': forecast_data['WndDirCardinal'],
-        'sky': forecast_data['SkyTextDay'],
-        'icon_code': forecast_data['IconCodeDay']
-    }
+def create_forecast_dict(context, forecast_data):
+    forecast_date = parse_intellicast_date(forecast_data['ValidDateLocal'])
 
-    forecast_dict_night = {
-        'shortname': context,
-        'temp': forecast_data['LoTempF'],
-        'temp_type': 'Low',
-        'precip_chance': forecast_data['PrecipChanceNight'],
-        'wind_speed': forecast_data['WndSpdMphNight'],
-        'wind_direction': forecast_data['WndDirCardinalNight'],
-        'sky': forecast_data['SkyTextNight'],
-        'icon_code': forecast_data['IconCodeNight']
-    }
+    forecast_dict = process_intellicast_data(forecast_data)
+    forecast_dict['datetime'] = forecast_date
+    forecast_dict['shortname'] = context
 
-    return (forecast_dict_day, forecast_dict_night)
+    return forecast_dict
 
 def get_intellicast_data(zipcode, long_cache=False, force=False):
     """
@@ -142,11 +167,11 @@ def thirtysix_hour_outlook(daily_forecasts):
     if todays_forecast['IconCodeDay'] == '86':
         todays_forecast_dict = None
     else:
-        todays_forecast_dict = _create_forecast_dict('Today', todays_forecast)[0]
-    tonights_forecast_dict = _create_forecast_dict('Tonight', todays_forecast)[1]
+        todays_forecast_dict = create_forecast_dict('Today', todays_forecast)
+    tonights_forecast_dict = create_forecast_dict('Tonight', todays_forecast)
 
     tomorrows_forecast = daily_forecasts['2']
-    tomorrows_forecast_dict = _create_forecast_dict('Tomorrow', tomorrows_forecast)[0]
+    tomorrows_forecast_dict = create_forecast_dict('Tomorrow', tomorrows_forecast)
     
     if todays_forecast_dict:
         tomorrow_nights_forecast_dict = None
@@ -162,7 +187,7 @@ def thirtysix_hour_outlook(daily_forecasts):
         }
 
         tomorrow = datetime.date.today().weekday() + 1
-        tomorrow_nights_forecast_dict = _create_forecast_dict(weekdays_dict[tomorrow] + ' Night', tomorrows_forecast)[1]
+        tomorrow_nights_forecast_dict = create_forecast_dict(weekdays_dict[tomorrow] + ' Night', tomorrows_forecast)[1]
     
     if todays_forecast_dict:
         twelve_hr_forecast = todays_forecast_dict
