@@ -10,39 +10,64 @@ from django.contrib.sites.models import Site
 from PIL import Image
 from requests.exceptions import ConnectionError, HTTPError
 
-DATA_MAPPING = {
-    'HiTempF': 'temp',
-    'LoTempF': 'temp',
+COMMON_MAPPING = {
     'TempF': 'temp',
-    'PrecipChanceDay': 'precip_chance',
-    'PrecipChanceNight': 'precip_chance',
     'PrecipChance': 'precip_chance',
     'WndSpdMph': 'wind_speed',
-    'WndSpdMphNight': 'wind_speed',
     'WndDirCardinal': 'wind_direction',
-    'WndDirCardinalNight': 'wind_direction',
-    'SkyTextDay': 'sky',
-    'SkyTextNight': 'sky',
     'SkyMedium': 'sky',
     'IconCode': 'icon_code',
-    'IconCodeDay': 'icon_code',
-    'IconCodeNight': 'icon_code',
     'RelHumidity': 'humidity',
-    'RelHumidityNight': 'humidity',
+    'ValidDateLocal': 'time_string',
+    'HeatIdxF': 'temp',
+    'ShortPhrase': 'phrase',
+}
+
+DAILY_MAPPING = {
+    'HiTempF': 'temp',
+    'PrecipChanceDay': 'precip_chance',
+    'WndDirCardinal': 'wind_direction',
+    'SkyTextDay': 'sky',
+    'IconCodeDay': 'icon_code',
+    'RelHumidity': 'humidity',
     'Sunrise': 'sunrise',
     'UvIdx': 'uv_index',
     'UvDescr': 'uv_description',
-    'ValidDateLocal': 'time_string',
-    'Sunset': 'sunset',
-    'MoonPhaseText': 'moon_phase',
-    'HeatIdxF': 'temp',
-    'ShortPhrase': 'phrase',
     'DayOfWk': 'weekday'
 }
 
-def process_intellicast_data(forecast_data):
+NIGHTLY_MAPPING = {
+    'LoTempF': 'temp',
+    'PrecipChanceNight': 'precip_chance',
+    'WndSpdMphNight': 'wind_speed',
+    'WndDirCardinalNight': 'wind_direction',
+    'SkyTextNight': 'sky',
+    'IconCodeNight': 'icon_code',
+    'RelHumidityNight': 'humidity',
+    'Sunset': 'sunset',
+    'MoonPhaseText': 'moon_phase',
+}
+
+def process_intellicast_data(context, forecast_data):
     processed_data = {}
-    for (intellicast_key, local_key) in DATA_MAPPING.items():
+    MAPPING = {}
+    if context == 'Hourly':
+        MAPPING = COMMON_MAPPING
+    elif context == 'Today' or context == 'Tomorrow':
+        MAPPING = DAILY_MAPPING
+    elif context == 'Tonight' or context.endswith(' Night'):
+        MAPPING = NIGHTLY_MAPPING
+    elif context == ('Daily'):
+        MAPPING.update(COMMON_MAPPING)
+        MAPPING['HiTempF'] = 'high_temp'
+        MAPPING['LoTempF'] = 'low_temp'
+    elif context == 'Day':
+        MAPPING.update(DAILY_MAPPING)
+        MAPPING['HiTempF'] = 'high_temp'
+    elif context == 'Night':
+        MAPPING.update(NIGHTLY_MAPPING)
+        MAPPING['LoTempF'] = 'low_temp'
+    for (intellicast_key, local_key) in MAPPING.items():
         try:
             data_item = forecast_data[intellicast_key]
         except KeyError:
@@ -62,7 +87,7 @@ def _request_data(request_url):
 def create_forecast_dict(context, forecast_data):
     forecast_date = parse_intellicast_date(forecast_data['ValidDateLocal'])
 
-    forecast_dict = process_intellicast_data(forecast_data)
+    forecast_dict = process_intellicast_data(context, forecast_data)
     forecast_dict['datetime'] = forecast_date
     forecast_dict['shortname'] = context
 

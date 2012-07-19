@@ -53,7 +53,7 @@ def weather_page(request):
     daily_forecast_items = []
     for i in range(2, 9):
         forecast_dict = daily_forecasts[str(i)]
-        forecast_clean = forecast_clean = create_forecast_dict('Hourly', forecast_dict)
+        forecast_clean = forecast_clean = create_forecast_dict('Daily', forecast_dict)
         daily_forecast_items.append(forecast_clean)
     try:
         alert_items = []
@@ -122,8 +122,8 @@ def daily_weather_detail(request, year=None, month=None, day=None):
     except KeyError:
         return render(request, 'intellicast/daily_weather_detail.html', {'unavailable': True})
 
-    day_forecast_dict = create_forecast_dict('Day', forecast)[0]
-    night_forecast_dict = create_forecast_dict('Night', forecast)[1]
+    day_forecast_dict = create_forecast_dict('Day', forecast)
+    night_forecast_dict = create_forecast_dict('Night', forecast)
     
     return render(request, 'intellicast/daily_weather_detail.html', {
         'location': location,

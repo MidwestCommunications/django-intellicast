@@ -11,8 +11,7 @@ from django.contrib.sites.models import get_current_site
 
 from loci.utils import geocode, geolocate_request
 
-from intellicast.utils import thirtysix_hour_outlook
-from intellicast.tasks import prefetch_intellicast_data
+from intellicast.utils import thirtysix_hour_outlook, get_intellicast_data
 
 """
 Summary of Template Tags and Syntax:
@@ -35,7 +34,7 @@ class GetExtendedConditions(template.Node):
         except (KeyError, AttributeError):
             zip_code = settings.DEFAULT_ZIP_CODE
         try:
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = prefetch_intellicast_data(zip_code)
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
             (twelve_hour, twentyfour_hour, thirtysix_hour) = thirtysix_hour_outlook(daily_forecasts)
             if not conditions:
                 return ''
