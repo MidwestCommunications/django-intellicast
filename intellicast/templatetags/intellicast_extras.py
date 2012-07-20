@@ -88,7 +88,7 @@ class GetConditions(template.Node):
         except (KeyError, AttributeError):
             zip_code = settings.DEFAULT_ZIP_CODE
         try:
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = prefetch_intellicast_data(zip_code)
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
         
             conditions_badge = {
                 'zipcode': zip_code, 
@@ -131,7 +131,7 @@ class GetAlerts(template.Node):
             if not zip_code:
                 zip_code = settings.DEFAULT_ZIP_CODE
         try:
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = prefetch_intellicast_data(zip_code)
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
         except TypeError:
             return ''
         except:
