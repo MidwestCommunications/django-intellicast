@@ -117,6 +117,8 @@ def daily_weather_detail(request, year=None, month=None, day=None):
     else:
         next_date = None
    
+    if not daily_forecasts:
+        return render(request, 'intellicast/daily_weather_detail.html', {'unavailable': True})
     try:
         forecast = daily_forecasts[day_index]
     except KeyError:
