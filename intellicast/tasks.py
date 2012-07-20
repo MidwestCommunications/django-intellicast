@@ -28,7 +28,7 @@ def prefetch_intellicast_data():
         if zipcode == '':
             continue
         intellicast_data = get_intellicast_data(zipcode, False, True)
-        if not all(intellicast_data):
+        if not all(intellicast_data[:4]):
             last_success_time = cache.get('intellicast_fetch_success')
             if not last_success_time or now - last_success_time > timedelta(hours=1):
                 cache.set('intellicast_fetch_success', now, 60 * 60 * 2)
