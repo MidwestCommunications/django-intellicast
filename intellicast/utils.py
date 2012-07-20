@@ -212,7 +212,7 @@ def thirtysix_hour_outlook(daily_forecasts):
         }
 
         tomorrow = datetime.date.today().weekday() + 1
-        tomorrow_nights_forecast_dict = create_forecast_dict(weekdays_dict[tomorrow] + ' Night', tomorrows_forecast)[1]
+        tomorrow_nights_forecast_dict = create_forecast_dict(weekdays_dict[tomorrow] + ' Night', tomorrows_forecast)
     
     if todays_forecast_dict:
         twelve_hr_forecast = todays_forecast_dict
