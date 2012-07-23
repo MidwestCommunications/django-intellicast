@@ -3,6 +3,7 @@ import datetime
 import time
 import string
 
+from django.http import Http404
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render
 from django.contrib.sites.models import get_current_site
@@ -92,7 +93,10 @@ def weather_page(request):
 
 def daily_weather_detail(request, year=None, month=None, day=None):
     
-    forecast_date = datetime.date(year=int(year), month=int(month), day=int(day))
+    try:
+        forecast_date = datetime.date(year=int(year), month=int(month), day=int(day))
+    except ValueError:
+        raise Http404
     today = timezone.now().date()
     if forecast_date < today:
         return render(request, 'intellicast/daily_weather_detail.html', {'unavailable': True})

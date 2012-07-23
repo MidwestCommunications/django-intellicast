@@ -56,4 +56,4 @@ class ViewTestCase(TestCase):
 
         #test GET with invalid weekday
         r = self.client.get(reverse('intellicast_daily_weather_detail', args=[2011, 10, 34]), {'zipcode': '54481'})
-        self.assertEqual(r.status_code, 200)
+        self.assertEqual(r.status_code, 404)
