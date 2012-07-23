@@ -25,6 +25,10 @@ class ViewTestCase(TestCase):
         r = self.client.get(reverse('intellicast_weather_page'), {'zipcode': 'Detroit, MI'})
         self.assertEqual(r.status_code, 200)
 
+        #test GET with invalid/non-US 'zip'
+        r = self.client.get(reverse('intellicast_weather_page'), {'zipcode': 'CAXX0498'})
+        self.assertEqual(r.status_code, 200)
+
     def test_daily_detail(self):
         # test normal GET
         r = self.client.get(reverse('intellicast_daily_weather_detail', args=[2011, 10, 21]))
@@ -44,4 +48,12 @@ class ViewTestCase(TestCase):
 
         # test GET with city name with space
         r = self.client.get(reverse('intellicast_daily_weather_detail', args=[2011, 10, 21]), {'zipcode': 'Detroit, MI'})
+        self.assertEqual(r.status_code, 200)
+
+        #test GET with invalid/non-US 'zip'
+        r = self.client.get(reverse('intellicast_daily_weather_detail', args=[2011, 10, 21]), {'zipcode': 'CAXX0498'})
+        self.assertEqual(r.status_code, 200)
+
+        #test GET with invalid weekday
+        r = self.client.get(reverse('intellicast_daily_weather_detail', args=[2011, 10, 34]), {'zipcode': '54481'})
         self.assertEqual(r.status_code, 200)
