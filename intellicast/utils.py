@@ -132,6 +132,9 @@ def get_intellicast_data(zipcode, long_cache=False, force=False):
     xml_data=_request_data('http://services.intellicast.com/200904-01/' + 
         '158765827/Weather/Report/' + location['intellicast_id'])
 
+    if not xml_data:
+        return (None, None, None, None, None)
+
     conditions_dict = {}
     conditions_node = xml_data.getElementsByTagName('CurrentObservation')[0]
     for attr in conditions_node.attributes.keys():
@@ -211,8 +214,8 @@ def thirtysix_hour_outlook(daily_forecasts):
             6: 'Sun'
         }
 
-        tomorrow = datetime.date.today().weekday() + 1
-        tomorrow_nights_forecast_dict = create_forecast_dict(weekdays_dict[tomorrow] + ' Night', tomorrows_forecast)
+        tomorrow = datetime.date.today() + datetime.timedelta(days=1)
+        tomorrow_nights_forecast_dict = create_forecast_dict(weekdays_dict[tomorrow.weekday()] + ' Night', tomorrows_forecast)
     
     if todays_forecast_dict:
         twelve_hr_forecast = todays_forecast_dict
