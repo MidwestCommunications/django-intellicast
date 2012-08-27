@@ -1,5 +1,6 @@
 import datetime
 import requests
+import hashlib
 
 from urllib2 import urlopen
 from xml.dom.minidom import parse, parseString
@@ -156,6 +157,7 @@ def get_intellicast_data(zipcode, long_cache=False, force=False):
         daily_forecast_dict[mini_dict['DayNum']] = mini_dict
     
     alerts_dict = {}
+    alerts_hash = {}
     alert_elements = xml_data.getElementsByTagName('Alert')
     if alert_elements:
         for i, node in enumerate(alert_elements, 1):
@@ -163,6 +165,8 @@ def get_intellicast_data(zipcode, long_cache=False, force=False):
             for attr in node.attributes.keys():
                 mini_dict[attr] = node.getAttribute(attr)
             alerts_dict[i] = mini_dict
+            if alerts_dict:
+                alerts_hash[i] = hashlib.md5(str(mini_dict)).hexdigest()
 
     #This is allowed to cache data for development
     if long_cache:
@@ -174,6 +178,9 @@ def get_intellicast_data(zipcode, long_cache=False, force=False):
 
     cache.set('intellicast_data_for_' + zipcode,
         (intellicast_data), caching_duration)
+    if alerts_hash:
+        print 'setting alerts cache'
+        cache.set('severe_alerts_list_' + zipcode, alerts_hash, caching_duration)
     
     return intellicast_data
 
