@@ -179,8 +179,9 @@ def get_intellicast_data(zipcode, long_cache=False, force=False):
     cache.set('intellicast_data_for_' + zipcode,
         (intellicast_data), caching_duration)
     if alerts_hash:
-        print 'setting alerts cache'
         cache.set('severe_alerts_list_' + zipcode, alerts_hash, caching_duration)
+    elif not alerts_hash:
+        cache.delete('severe_alerts_list_' + zipcode)
     
     return intellicast_data
 
