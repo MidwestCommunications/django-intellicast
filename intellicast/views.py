@@ -3,7 +3,7 @@ import datetime
 import time
 import string
 
-from django.http import Http404
+from django.http import Http404, HttpResponse
 from django.conf import settings
 from django.shortcuts import get_object_or_404, render
 from django.contrib.sites.models import get_current_site
@@ -140,4 +140,15 @@ def daily_weather_detail(request, year=None, month=None, day=None):
         'night_forecast': night_forecast_dict,
         'unavailable': False,
         'geo_form': geo_form,
-    })  
+    })
+
+def texting_weather(request):
+
+    site=get_current_site(request)
+    data = get_intellicast_data(site.profile.zip_code)
+
+    current_temp = data[1]['TempF']
+    sky = data[1]['Sky']
+
+    return HttpResponse(current_temp + ' degrees, ' + sky + '. Standard Message & data rates may apply. Text STOP to quit. HELP for info.', content_type='text/plain')
+

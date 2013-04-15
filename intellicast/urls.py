@@ -18,6 +18,11 @@ urlpatterns = patterns('intellicast.views',
         name='intellicast_daily_weather_detail'
     ),
 
+    url(r'^texting/$',
+        'texting_weather',
+        name='intellicast_texting_weather'
+    ),
+
     #url(r'^articles/(?P<year>\d{4})/(?P<month>\w{3})/(?P<day>\d{1,2})/(?P<slug>[-\w]+)/$',
     #    'article_detail',
     #    name='scoop_article_detail'
