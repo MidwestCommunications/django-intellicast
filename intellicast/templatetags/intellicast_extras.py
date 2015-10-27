@@ -78,20 +78,23 @@ def get_extended_weather_conditions(parser, token):
 
 
 class GetConditions(template.Node):
-    def __init__(self, var_name):
+    def __init__(self, var_name, zip_code):
         self.var_name = var_name
+        self.zip_code = zip_code
         
     def render(self, context):
         try:
             request = context['request']
-            zip_code = get_current_site(request).profile.zip_code
+            if not self.zip_code:
+                self.zip_code = get_current_site(request).profile.zip_code
         except (KeyError, AttributeError):
-            zip_code = settings.DEFAULT_ZIP_CODE
+            if not self.zip_code:
+                self.zip_code = settings.DEFAULT_ZIP_CODE
         try:
-            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(self.zip_code)
         
             conditions_badge = {
-                'zipcode': zip_code, 
+                'zipcode': self.zip_code, 
                 'current_temp': conditions['TempF'], 
                 'icon_code': conditions['IconCode'],
                 'feels_like': conditions['FeelsLikeF'],
@@ -116,6 +119,22 @@ def get_weather_conditions(parser, token):
     args = token.split_contents()
     var_name = args[-1]
     return GetConditions(var_name)
+
+
+@register.tag
+def get_weather_conditions_by_zip(parser, token):
+    """
+    Get the weather conditions by zip_code
+    
+    Syntax:
+    {% get_current_conditions [zip_code] as [var_name] %}
+    """
+    
+    args = token.split_contents()
+    zip_code = args[-3]
+    var_name = args[-1]
+    return GetConditions(var_name, zip_code)
+
 
 class GetAlerts(template.Node):
     def __init__(self, var_name):
