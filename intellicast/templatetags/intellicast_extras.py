@@ -78,7 +78,7 @@ def get_extended_weather_conditions(parser, token):
 
 
 class GetConditions(template.Node):
-    def __init__(self, var_name, zip_code):
+    def __init__(self, var_name, zip_code=None):
         self.var_name = var_name
         self.zip_code = zip_code
         
