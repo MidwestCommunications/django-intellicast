@@ -75,9 +75,35 @@ def get_extended_weather_conditions(parser, token):
     var_name = args[-1]
     return GetExtendedConditions(var_name)
 
-
-
 class GetConditions(template.Node):
+    def __init__(self, var_name):
+        self.var_name = var_name
+        
+    def render(self, context):
+        try:
+            request = context['request']
+            zip_code = get_current_site(request).profile.zip_code
+        except (KeyError, AttributeError):
+            zip_code = settings.DEFAULT_ZIP_CODE
+        try:
+            (location, conditions, hourly_forecasts, daily_forecasts, alerts) = get_intellicast_data(zip_code)
+        
+            conditions_badge = {
+                'zipcode': zip_code, 
+                'current_temp': conditions['TempF'], 
+                'icon_code': conditions['IconCode'],
+                'feels_like': conditions['FeelsLikeF'],
+                'wind_direction': conditions['WndDirCardinal'],
+                'wind_speed': conditions['WndSpdMph'],
+                'sky': conditions['Sky'],
+            }
+            context[self.var_name] = conditions_badge
+        except:
+            return ''
+        return ''
+
+
+class GetConditionsByZip(template.Node):
     def __init__(self, var_name, zip_code=None):
         self.var_name = var_name
         self.zip_code = zip_code
@@ -133,7 +159,7 @@ def get_weather_conditions_by_zip(parser, token):
     args = token.split_contents()
     zip_code = args[-3]
     var_name = args[-1]
-    return GetConditions(var_name, zip_code)
+    return GetConditionsByZip(var_name, zip_code)
 
 
 class GetAlerts(template.Node):
